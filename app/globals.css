@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply bg-canvas text-ink antialiased;
+  }
+  ::selection {
+    @apply bg-ink text-canvas;
+  }
+
+  select,
+  input[type="number"],
+  input[type="text"],
+  input[type="search"] {
+    @apply w-full border-b border-line bg-transparent py-2 font-sans text-sm text-ink;
+  }
+
+  select:focus,
+  input:focus {
+    @apply outline-none border-ink;
+  }
+}
+
+@layer components {
+  .container-gallery {
+    @apply mx-auto w-full max-w-content px-6 sm:px-10 lg:px-16;
+  }
+
+  .eyebrow {
+    @apply font-sans text-xs uppercase tracking-widest2 text-muted;
+  }
+
+  .link-underline {
+    @apply underline decoration-line decoration-1 underline-offset-4 transition-colors hover:decoration-ink;
+  }
+
+  /* Applied to artwork narrative fields that turn out to contain real HTML
+     markup rather than plain text — see lib/utils.ts#looksLikeHtml. Kept as
+     hand-written rules instead of pulling in the Tailwind typography
+     plugin, since it's only a handful of tags. */
+  .richtext {
+    @apply leading-relaxed text-muted;
+  }
+  .richtext p {
+    @apply mb-4 last:mb-0;
+  }
+  .richtext strong,
+  .richtext b {
+    @apply font-semibold text-ink;
+  }
+  .richtext em,
+  .richtext i {
+    @apply italic;
+  }
+  .richtext ul {
+    @apply mb-4 list-disc pl-5;
+  }
+  .richtext ol {
+    @apply mb-4 list-decimal pl-5;
+  }
+  .richtext li {
+    @apply mb-1;
+  }
+  .richtext a {
+    @apply text-ink underline underline-offset-4;
+  }
+  .richtext h1,
+  .richtext h2,
+  .richtext h3,
+  .richtext h4 {
+    @apply mb-3 mt-6 font-display text-ink first:mt-0;
+  }
+}
