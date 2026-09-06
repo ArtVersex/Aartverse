@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import type { CategoryFacet } from "@/lib/queries/categories";
 import type { ColorFacet } from "@/lib/queries/colors";
 import { normalizeHex } from "@/lib/utils";
@@ -185,9 +186,9 @@ export default function ArtworkFilters({
         >
           Apply filters
         </button>
-        <a href="/artworks" className="eyebrow link-underline">
+        <Link href="/artworks" className="eyebrow link-underline">
           Clear all
-        </a>
+        </Link>
       </div>
     </form>
   );
