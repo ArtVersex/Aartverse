@@ -41,7 +41,7 @@ export default function ColorScaleBar({ segments }: { segments: ColorScaleSegmen
               width: `${(s.pct / total) * 100}%`,
               backgroundColor: normalizeHex(s.hex) ?? "#d8d2c8",
             }}
-            title={`${s.family} — ${Math.round(s.pct)}%`}
+            title={`${s.family} (${Math.round(s.pct)}%)`}
           />
         ))}
       </div>

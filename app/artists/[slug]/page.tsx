@@ -91,7 +91,7 @@ export default async function ArtistProfilePage({ params, searchParams }: Props)
     return `/artists/${slug}${qs ? `?${qs}` : ""}`;
   };
 
-  const headingLabel = [selectedCollection, selectedCategory].filter(Boolean).join(" — ");
+  const headingLabel = [selectedCollection, selectedCategory].filter(Boolean).join(" · ");
 
   return (
     <div>
@@ -100,7 +100,7 @@ export default async function ArtistProfilePage({ params, searchParams }: Props)
         {artist.cover_image_url && (
           <SafeImage
             src={artist.cover_image_url}
-            alt={`${artist.name} — cover image`}
+            alt={`${artist.name} cover image`}
             fill
             priority
             sizes="100vw"

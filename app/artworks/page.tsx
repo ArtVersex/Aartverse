@@ -154,7 +154,7 @@ export default async function ArtworksPage({
       {items.length === 0 ? (
         <EmptyState
           title="No artworks match those filters"
-          message="Try clearing a filter or two — new work is added regularly."
+          message="Try clearing a filter or two. New work is added regularly."
         />
       ) : (
         <div className="grid grid-cols-2 gap-x-6 gap-y-14 items-start sm:grid-cols-3 lg:grid-cols-4">

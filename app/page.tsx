@@ -21,9 +21,9 @@ import { normalizeHex } from "@/lib/utils";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Aartverse — Contemporary Art Marketplace",
+  title: "Aartverse | Contemporary Art Marketplace",
   description:
-    "Discover original artworks and the artists behind them on Aartverse — a contemporary art marketplace.",
+    "Discover original artworks and the artists behind them on Aartverse, a contemporary art marketplace.",
 };
 
 export default async function HomePage() {
@@ -50,7 +50,7 @@ export default async function HomePage() {
         </h1>
         <p className="max-w-xl text-lg text-muted">
           A considered collection of contemporary paintings, drawings and
-          mixed-media work — each piece verified, certified, and ready to
+          mixed-media work, each piece verified, certified, and ready to
           find a new home.
         </p>
         <div className="flex flex-wrap gap-6 pt-2">
@@ -219,7 +219,7 @@ export default async function HomePage() {
             Show your work to collectors who are looking for it.
           </h2>
           <p className="max-w-xl text-muted">
-            Aartverse is built for original, verified work — every piece is
+            Aartverse is built for original, verified work. Every piece is
             certified and presented with the context collectors want:
             technique, history and meaning.
           </p>

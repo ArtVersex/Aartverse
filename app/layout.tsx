@@ -20,7 +20,7 @@ const display = Playfair_Display({
 export const metadata: Metadata = {
   metadataBase: new URL("https://aartverse.com"),
   title: {
-    default: "Aartverse — Contemporary Art Marketplace",
+    default: "Aartverse | Contemporary Art Marketplace",
     template: "%s | Aartverse",
   },
   description:

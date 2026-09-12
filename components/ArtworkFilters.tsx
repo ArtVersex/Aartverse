@@ -60,13 +60,13 @@ export default function ArtworkFilters({
           filter is never hidden behind a collapsed toggle. */}
       <details className="mb-8 border-b border-line pb-8" open={selectedColors.length > 0}>
         <summary className="eyebrow cursor-pointer text-[11px]">
-          Advanced filters — find by color
+          Advanced filters: find by color
           {selectedColors.length > 0 &&
             ` (${selectedColors.map((c) => c.family).join(", ")})`}
         </summary>
         <p className="mt-4 text-xs text-muted">
           Select one or more colors. Each gets its own slider for how
-          strongly that color should show up in the piece — leave it at 0%
+          strongly that color should show up in the piece, leave it at 0%
           to just require the color is present at all.
         </p>
         <div className="mt-5 flex flex-wrap gap-x-6 gap-y-8">

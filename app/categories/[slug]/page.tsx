@@ -95,7 +95,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Props
       {items.length === 0 ? (
         <EmptyState
           title="No artworks in this category yet"
-          message="Check back soon — new work is added regularly."
+          message="Check back soon. New work is added regularly."
         />
       ) : (
         <div className="grid grid-cols-2 gap-x-6 gap-y-14 items-start sm:grid-cols-3 lg:grid-cols-4">

@@ -32,7 +32,7 @@ export default async function WeekBestIndexPage() {
         <h1 className="mt-3 font-display text-4xl sm:text-5xl">Week Best Collection</h1>
         <p className="mt-4 text-lg text-muted">
           Every week, our editors highlight a small set of artworks worth a
-          closer look — not to be confused with an artist&apos;s own series.
+          closer look, not to be confused with an artist&apos;s own series.
         </p>
       </div>
 
