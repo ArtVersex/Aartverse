@@ -6,6 +6,18 @@ const COLLAPSED_HEIGHT: Record<"sm" | "md" | "lg", string> = {
   lg: "max-h-48",
 };
 
+// The fade overlay used to be a flat h-14 (56px) for every size. That's a
+// reasonable ~30% of the "lg" box (192px), but ate ~44% of "md" (128px) and
+// over half of "sm" (96px) -- on a short mobile preview the gradient (and
+// the "Read more" label sitting right under it) visually swallowed most of
+// the last one or two lines instead of just softening one line's edge.
+// Scaling the fade with the box keeps that ratio consistent at every size.
+const FADE_HEIGHT: Record<"sm" | "md" | "lg", string> = {
+  sm: "-mt-6 h-6",
+  md: "-mt-8 h-8",
+  lg: "-mt-12 h-12",
+};
+
 /**
  * Clamps long text to a preview height with a "Read more" toggle — pure
  * CSS (a hidden checkbox + the `peer` variant), no client JS, consistent
@@ -35,7 +47,7 @@ export default function ReadMore({
         {children}
       </div>
       <div
-        className="-mt-14 h-14 bg-gradient-to-t from-canvas to-transparent peer-checked:hidden"
+        className={`${FADE_HEIGHT[size]} bg-gradient-to-t from-canvas to-transparent peer-checked:hidden`}
         aria-hidden
       />
       <label

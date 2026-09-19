@@ -26,8 +26,9 @@ export function buildHomeVisitMessage(artworkTitle: string, artworkId: string): 
 export const GENERAL_WHATSAPP_MESSAGE =
   "Hi Aartverse, I have a question about an artwork on your site.";
 
-/** Home-visit service pricing — see app/about/page.tsx for the full
- *  explanation shown to customers. Kept here so every place that mentions
- *  the fee (the about page, the artwork-page CTA) stays in sync. */
+/** Home-visit service pricing — charged per artwork the customer wants to
+ *  see in person, not a flat per-artist/per-visit fee. See
+ *  app/about/page.tsx for the full explanation shown to customers. Kept
+ *  here so every place that mentions the fee (the about page, the
+ *  artwork-page CTA) stays in sync. */
 export const HOME_VISIT_FEE_INR = 1000;
-export const HOME_VISIT_MAX_ARTWORKS_PER_ARTIST = 3;

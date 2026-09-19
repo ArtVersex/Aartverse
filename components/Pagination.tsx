@@ -26,7 +26,7 @@ export default function Pagination({
   return (
     <nav className="mt-16 flex items-center justify-center gap-8 border-t border-line pt-8">
       {prev ? (
-        <Link href={pageHref(basePath, searchParams, prev)} className="eyebrow link-underline">
+        <Link href={pageHref(basePath, searchParams, prev)} className="nav-link !text-[13px]">
           ← Previous
         </Link>
       ) : (
@@ -38,7 +38,7 @@ export default function Pagination({
       </span>
 
       {next ? (
-        <Link href={pageHref(basePath, searchParams, next)} className="eyebrow link-underline">
+        <Link href={pageHref(basePath, searchParams, next)} className="nav-link !text-[13px]">
           Next →
         </Link>
       ) : (

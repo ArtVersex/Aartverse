@@ -132,7 +132,7 @@ function buildListSelect(colorFamilies?: string[]): { sql: string; params: unkno
         ORDER BY c.rank_number ASC LIMIT 1
       ) AS dominant_color_hex,
       ${colorMatchColumns}
-    FROM artworks w
+    FROM (SELECT * FROM artworks WHERE status = 'approved') w
     LEFT JOIN artists a ON a.artist_id = w.artist_id
   `;
 
@@ -146,7 +146,11 @@ const BASE_LIST_SELECT = buildListSelect().sql;
 
 /** Builds a shared WHERE clause + params for both the list and count queries. */
 function buildWhere(filters: ArtworkFilters): { sql: string; params: unknown[] } {
-  const clauses: string[] = [];
+  // Redundant with the approved-only subquery in buildListSelect() for the
+  // list itself, but this WHERE is also reused as-is for the sibling COUNT(*)
+  // query in getArtworks() below, which reads straight from `artworks w`
+  // without going through that subquery — so the filter has to live here too.
+  const clauses: string[] = ["w.status = 'approved'"];
   const params: unknown[] = [];
 
   if (filters.category) {
@@ -260,13 +264,25 @@ export async function getArtworks(options: {
   return { items, page, pageSize, total, totalPages };
 }
 
+/**
+ * `requireApproved` defaults to true -- the public artwork detail page
+ * (app/artworks/[artwork_id]/page.tsx) calls this with no options, so a
+ * pending/draft/rejected artwork's direct URL 404s like it doesn't exist,
+ * consistent with every other public browsing surface only ever showing
+ * approved work. The admin review page
+ * (app/admin/artworks/[artwork_id]/page.tsx) is the one deliberate
+ * exception -- it passes `{ requireApproved: false }` so the team can see
+ * a submission before deciding whether to approve it at all.
+ */
 export async function getArtworkById(
-  artworkId: string
+  artworkId: string,
+  options: { requireApproved?: boolean } = {}
 ): Promise<ArtworkDetail | null> {
+  const { requireApproved = true } = options;
   const row = await queryOne<
     Omit<ArtworkDetail, "colors" | "parsed_color_analysis">
   >(
-    `${BASE_LIST_SELECT} WHERE w.artwork_id = ? LIMIT 1`,
+    `${BASE_LIST_SELECT} WHERE w.artwork_id = ?${requireApproved ? " AND w.status = 'approved'" : ""} LIMIT 1`,
     [artworkId]
   );
   if (!row) return null;
@@ -323,12 +339,38 @@ export async function getRelatedArtworks(
   return [];
 }
 
-/** Home page "featured" rail — artworks flagged impactful = 1. */
-export async function getFeaturedArtworks(limit = 8): Promise<ArtworkListItem[]> {
-  return query<ArtworkListItem>(
-    `${BASE_LIST_SELECT} WHERE w.impactful = 1 ORDER BY w.created_at DESC LIMIT ?`,
-    [limit]
+/**
+ * Home page "featured" rail. A small hand-picked set leads the rail
+ * (feature_rank, lower = better -- 1 is the single best pick), and the
+ * remaining slots backfill with the most recently added impactful
+ * artworks -- e.g. 5 curated picks plus the 3 newest to fill an 8-wide
+ * rail. `rankedSlots` caps how many ranked picks can lead before backfill
+ * takes over, independent of the total `limit` requested. Falls back to
+ * pure recency (this function's original behavior) once nothing carries a
+ * feature_rank yet, so this is a no-op change until an admin actually
+ * ranks something.
+ */
+export async function getFeaturedArtworks(
+  limit = 8,
+  rankedSlots = 5
+): Promise<ArtworkListItem[]> {
+  const rankedLimit = Math.min(limit, Math.max(0, rankedSlots));
+  const ranked =
+    rankedLimit > 0
+      ? await query<ArtworkListItem>(
+          `${BASE_LIST_SELECT} WHERE w.impactful = 1 AND w.feature_rank IS NOT NULL ORDER BY w.feature_rank ASC, w.created_at DESC LIMIT ?`,
+          [rankedLimit]
+        )
+      : [];
+
+  const remaining = limit - ranked.length;
+  if (remaining <= 0) return ranked;
+
+  const backfill = await query<ArtworkListItem>(
+    `${BASE_LIST_SELECT} WHERE w.impactful = 1 AND w.feature_rank IS NULL ORDER BY w.created_at DESC LIMIT ?`,
+    [remaining]
   );
+  return [...ranked, ...backfill];
 }
 
 /** Home page "selected artworks" rail — a broader sample, still restricted
@@ -361,7 +403,7 @@ export async function getDistinctCategories(): Promise<
   return query<{ category: string; artwork_count: number }>(
     `SELECT category, COUNT(*) AS artwork_count
      FROM artworks
-     WHERE category IS NOT NULL AND category != ''
+     WHERE category IS NOT NULL AND category != '' AND status = 'approved'
      GROUP BY category
      ORDER BY category ASC`
   );
@@ -371,7 +413,7 @@ export async function getDistinctCategories(): Promise<
  *  label the "All" option in the artist page's category filter. */
 export async function getArtworkCountForArtist(artistId: string): Promise<number> {
   const row = await queryOne<{ total: number }>(
-    `SELECT COUNT(*) AS total FROM artworks WHERE artist_id = ?`,
+    `SELECT COUNT(*) AS total FROM artworks WHERE artist_id = ? AND status = 'approved'`,
     [artistId]
   );
   return row?.total ?? 0;
@@ -388,7 +430,7 @@ export async function getDistinctCategoriesForArtist(
   return query<{ category: string; artwork_count: number }>(
     `SELECT category, COUNT(*) AS artwork_count
      FROM artworks
-     WHERE artist_id = ? AND category IS NOT NULL AND category != ''
+     WHERE artist_id = ? AND category IS NOT NULL AND category != '' AND status = 'approved'
      GROUP BY category
      ORDER BY category ASC`,
     [artistId]
@@ -412,6 +454,7 @@ export async function getDistinctCollectionNamesForArtist(
        AND part_of_collection = 1
        AND collection_name IS NOT NULL
        AND collection_name != ''
+       AND status = 'approved'
      GROUP BY collection_name
      ORDER BY collection_name ASC`,
     [artistId]
@@ -421,7 +464,7 @@ export async function getDistinctCollectionNamesForArtist(
 /** Distinct subcategory values, split out of the comma-separated field. */
 export async function getDistinctSubcategories(): Promise<string[]> {
   const rows = await query<{ subcategory: string }>(
-    `SELECT DISTINCT subcategory FROM artworks WHERE subcategory IS NOT NULL AND subcategory != ''`
+    `SELECT DISTINCT subcategory FROM artworks WHERE subcategory IS NOT NULL AND subcategory != '' AND status = 'approved'`
   );
   const values = new Set<string>();
   for (const row of rows) {
@@ -437,7 +480,7 @@ export async function getDistinctSubcategories(): Promise<string[]> {
  *  populate the year filter without hard-coding a range. */
 export async function getDistinctYears(): Promise<number[]> {
   const rows = await query<{ year: number }>(
-    `SELECT DISTINCT year FROM artworks WHERE year IS NOT NULL ORDER BY year DESC`
+    `SELECT DISTINCT year FROM artworks WHERE year IS NOT NULL AND status = 'approved' ORDER BY year DESC`
   );
   return rows.map((r) => r.year);
 }
@@ -446,7 +489,7 @@ export async function getDistinctYears(): Promise<number[]> {
 export async function getDistinctCollectionNames(): Promise<string[]> {
   const rows = await query<{ collection_name: string }>(
     `SELECT DISTINCT collection_name FROM artworks
-     WHERE part_of_collection = 1 AND collection_name IS NOT NULL AND collection_name != ''
+     WHERE part_of_collection = 1 AND collection_name IS NOT NULL AND collection_name != '' AND status = 'approved'
      ORDER BY collection_name ASC`
   );
   return rows.map((r) => r.collection_name);
@@ -454,7 +497,7 @@ export async function getDistinctCollectionNames(): Promise<string[]> {
 
 export async function getPriceBounds(): Promise<{ min: number; max: number } | null> {
   const row = await queryOne<{ min: number; max: number }>(
-    `SELECT MIN(price) AS min, MAX(price) AS max FROM artworks WHERE price IS NOT NULL`
+    `SELECT MIN(price) AS min, MAX(price) AS max FROM artworks WHERE price IS NOT NULL AND status = 'approved'`
   );
   if (!row || row.min === null || row.max === null) return null;
   return row;
@@ -467,13 +510,13 @@ export async function getAllArtworkIdsForSitemap(): Promise<
   Array<{ artwork_id: string; updated_at: string | null }>
 > {
   return query<{ artwork_id: string; updated_at: string | null }>(
-    `SELECT artwork_id, updated_at FROM artworks ORDER BY created_at DESC`
+    `SELECT artwork_id, updated_at FROM artworks WHERE status = 'approved' ORDER BY created_at DESC`
   );
 }
 
 export async function countArtworks(): Promise<number> {
   const row = await queryOne<{ total: number }>(
-    `SELECT COUNT(*) AS total FROM artworks`
+    `SELECT COUNT(*) AS total FROM artworks WHERE status = 'approved'`
   );
   return row?.total ?? 0;
 }

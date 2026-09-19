@@ -43,15 +43,18 @@ export default function ArtworkCard({ artwork }: { artwork: ArtworkListItem }) {
       </Link>
 
       <div className="mt-4 flex flex-col gap-1">
-        <h3 className="font-display text-lg leading-snug">
-          <Link href={`/artworks/${encodeURIComponent(artwork.artwork_id)}`} className="link-underline">
+        <h3 className="font-display text-lg leading-snug transition-colors">
+          <Link
+            href={`/artworks/${encodeURIComponent(artwork.artwork_id)}`}
+            className="link-underline decoration-line group-hover:text-accent group-hover:decoration-accent/50"
+          >
             {artwork.title}
           </Link>
         </h3>
         {artwork.artist_name && (
           <p className="text-sm text-muted">
             {artwork.artist_slug ? (
-              <Link href={`/artists/${artwork.artist_slug}`} className="hover:text-ink">
+              <Link href={`/artists/${artwork.artist_slug}`} className="transition-colors hover:text-ink">
                 {artwork.artist_name}
               </Link>
             ) : (

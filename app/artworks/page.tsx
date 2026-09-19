@@ -123,8 +123,8 @@ export default async function ArtworksPage({
   return (
     <div className="container-gallery py-16">
       <div className="mb-10 border-b border-line pb-8">
-        <p className="eyebrow">Catalogue</p>
-        <h1 className="font-display text-4xl sm:text-5xl">
+        <p className="eyebrow text-accent">Catalogue</p>
+        <h1 className="mt-2 font-display text-4xl sm:text-5xl">
           {activeColorLabel ? `${activeColorLabel} artworks` : "Artworks"}
         </h1>
         <p className="mt-3 text-muted">
@@ -154,7 +154,7 @@ export default async function ArtworksPage({
       {items.length === 0 ? (
         <EmptyState
           title="No artworks match those filters"
-          message="Try clearing a filter or two — new work is added regularly."
+          message="Try clearing a filter or two. New work is added regularly."
         />
       ) : (
         <div className="grid grid-cols-2 gap-x-6 gap-y-14 items-start sm:grid-cols-3 lg:grid-cols-4">

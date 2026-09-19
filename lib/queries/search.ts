@@ -33,6 +33,7 @@ export async function searchArtworks(
         OR w.short_description LIKE ?
         OR w.description LIKE ?)
        AND w.impactful = 1
+       AND w.status = 'approved'
      ORDER BY w.created_at DESC
      LIMIT ?`,
     [like, like, like, like, like, like, like, limit]

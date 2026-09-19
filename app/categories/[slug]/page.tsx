@@ -69,8 +69,8 @@ export default async function CategoryDetailPage({ params, searchParams }: Props
           </div>
         )}
         <div>
-          <p className="eyebrow">Category</p>
-          <h1 className="font-display text-4xl sm:text-5xl">{category.name}</h1>
+          <p className="eyebrow text-accent">Category</p>
+          <h1 className="mt-1 font-display text-4xl sm:text-5xl">{category.name}</h1>
           {category.description && (
             <p className="mt-3 max-w-2xl text-muted">{category.description}</p>
           )}
@@ -85,7 +85,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Props
           <Link
             key={option}
             href={`/categories/${slug}?sort=${option}`}
-            className={`eyebrow ${sort === option ? "text-ink underline decoration-1 underline-offset-4" : "text-muted"}`}
+            className={`eyebrow ${sort === option ? "text-accent underline decoration-1 underline-offset-4" : "text-muted transition-colors hover:text-ink"}`}
           >
             {SORT_LABELS[option]}
           </Link>
@@ -95,7 +95,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Props
       {items.length === 0 ? (
         <EmptyState
           title="No artworks in this category yet"
-          message="Check back soon — new work is added regularly."
+          message="Check back soon. New work is added regularly."
         />
       ) : (
         <div className="grid grid-cols-2 gap-x-6 gap-y-14 items-start sm:grid-cols-3 lg:grid-cols-4">

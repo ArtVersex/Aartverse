@@ -43,10 +43,9 @@ export default function PurchaseEnquiry({
         <div>
           <p className="text-sm font-medium text-ink">Home visit available</p>
           <p className="mt-1 text-sm leading-relaxed text-muted">
-            Select artworks can be viewed at your home before you decide — a
-            flat {formatPrice(HOME_VISIT_FEE_INR)} covers up to 3 pieces from
-            this artist, fully adjusted against the purchase if you go
-            ahead. See{" "}
+            Select artworks can be viewed at your home before you decide. A
+            visit is {formatPrice(HOME_VISIT_FEE_INR)} per artwork, fully
+            adjusted against the purchase if you go ahead. See{" "}
             <Link href="/about#home-visits" className="link-underline">
               how it works
             </Link>

@@ -50,145 +50,184 @@ export default function ArtworkFilters({
   const minProportionFor = (family: string) =>
     selectedColors.find((c) => c.family === family)?.minProportion ?? 0;
 
+  // On mobile this form used to always render open: eight fields plus the
+  // color picker, all above the fold, before a single artwork was visible.
+  // It's now collapsed behind a "Filters" toggle on small screens (pure CSS
+  // checkbox + peer, same technique as components/ReadMore.tsx) and left
+  // permanently expanded from sm: up, where there's room for it. Exactly
+  // like the color <details> below, it opens automatically whenever a
+  // filter is already active, so an applied filter is never hidden.
+  const hasActiveFilters = Boolean(
+    current.category ||
+      current.subcategory ||
+      current.artist ||
+      current.minPrice ||
+      current.maxPrice ||
+      current.year ||
+      current.availability ||
+      current.collection ||
+      selectedColors.length > 0
+  );
+
   return (
-    <form method="get" action="/artworks" className="border border-line p-6">
-      {/* Color — matched and ranked by color_family + proportion (see
-          lib/queries/artworks.ts) — is the most powerful, least obvious way
-          to browse this site, so it lives under "Advanced filters" rather
-          than among the everyday category/price/artist fields. Left open
-          automatically whenever a color is already active, so a chosen
-          filter is never hidden behind a collapsed toggle. */}
-      <details className="mb-8 border-b border-line pb-8" open={selectedColors.length > 0}>
-        <summary className="eyebrow cursor-pointer text-[11px]">
-          Advanced filters — find by color
-          {selectedColors.length > 0 &&
-            ` (${selectedColors.map((c) => c.family).join(", ")})`}
-        </summary>
-        <p className="mt-4 text-xs text-muted">
-          Select one or more colors. Each gets its own slider for how
-          strongly that color should show up in the piece — leave it at 0%
-          to just require the color is present at all.
-        </p>
-        <div className="mt-5 flex flex-wrap gap-x-6 gap-y-8">
-          {facets.colors.map((c) => (
-            <ColorOption
-              key={c.color_family}
-              family={c.color_family}
-              hex={c.hex}
-              checked={selectedColors.some((s) => s.family === c.color_family)}
-              minProportion={minProportionFor(c.color_family)}
+    <form method="get" action="/artworks" className="border border-line bg-white p-6 shadow-soft sm:p-8">
+      <input
+        type="checkbox"
+        id="artwork-filters-toggle"
+        className="peer sr-only"
+        defaultChecked={hasActiveFilters}
+      />
+      <label
+        htmlFor="artwork-filters-toggle"
+        className="eyebrow mb-6 flex cursor-pointer items-center justify-between border-b border-line pb-4 text-[11px] sm:hidden peer-checked:hidden"
+      >
+        <span>Filters{hasActiveFilters ? " · active" : ""}</span>
+        <span aria-hidden>Show +</span>
+      </label>
+      <label
+        htmlFor="artwork-filters-toggle"
+        className="eyebrow mb-6 hidden cursor-pointer items-center justify-between border-b border-line pb-4 text-[11px] sm:hidden peer-checked:flex"
+      >
+        <span>Filters{hasActiveFilters ? " · active" : ""}</span>
+        <span aria-hidden>Hide −</span>
+      </label>
+
+      <div className="hidden peer-checked:block sm:block">
+        {/* Color — matched and ranked by color_family + proportion (see
+            lib/queries/artworks.ts) — is the most powerful, least obvious way
+            to browse this site, so it lives under "Advanced filters" rather
+            than among the everyday category/price/artist fields. Left open
+            automatically whenever a color is already active, so a chosen
+            filter is never hidden behind a collapsed toggle. */}
+        <details className="mb-8 border-b border-line pb-8" open={selectedColors.length > 0}>
+          <summary className="eyebrow cursor-pointer text-[11px]">
+            Advanced filters: find by color
+            {selectedColors.length > 0 &&
+              ` (${selectedColors.map((c) => c.family).join(", ")})`}
+          </summary>
+          <p className="mt-4 text-xs text-muted">
+            Select one or more colors. Each gets its own slider for how
+            strongly that color should show up in the piece, leave it at 0%
+            to just require the color is present at all.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-x-6 gap-y-8">
+            {facets.colors.map((c) => (
+              <ColorOption
+                key={c.color_family}
+                family={c.color_family}
+                hex={c.hex}
+                checked={selectedColors.some((s) => s.family === c.color_family)}
+                minProportion={minProportionFor(c.color_family)}
+              />
+            ))}
+          </div>
+        </details>
+
+        <div className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
+          <Field label="Category">
+            <select name="category" defaultValue={current.category ?? ""}>
+              <option value="">All categories</option>
+              {facets.categories.map((c) => (
+                <option key={c.slug} value={c.name}>
+                  {c.name} ({c.artwork_count})
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Subcategory">
+            <select name="subcategory" defaultValue={current.subcategory ?? ""}>
+              <option value="">All subcategories</option>
+              {facets.subcategories.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Artist">
+            <select name="artist" defaultValue={current.artist ?? ""}>
+              <option value="">All artists</option>
+              {facets.artists.map((a) => (
+                <option key={a.artist_id} value={a.artist_id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Min price">
+            <input
+              type="number"
+              name="minPrice"
+              min={facets.priceBounds?.min ?? 0}
+              placeholder={facets.priceBounds ? String(Math.floor(facets.priceBounds.min)) : "0"}
+              defaultValue={current.minPrice ?? ""}
             />
-          ))}
+          </Field>
+
+          <Field label="Max price">
+            <input
+              type="number"
+              name="maxPrice"
+              min={0}
+              placeholder={facets.priceBounds ? String(Math.ceil(facets.priceBounds.max)) : ""}
+              defaultValue={current.maxPrice ?? ""}
+            />
+          </Field>
+
+          <Field label="Year">
+            <select name="year" defaultValue={current.year ?? ""}>
+              <option value="">Any year</option>
+              {facets.years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Availability">
+            <select name="availability" defaultValue={current.availability ?? ""}>
+              <option value="">All</option>
+              <option value="in_stock">Available</option>
+              <option value="sold">Sold</option>
+            </select>
+          </Field>
+
+          <Field label="Collection">
+            <select name="collection" defaultValue={current.collection ?? ""}>
+              <option value="">All collections</option>
+              {facets.collections.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Sort by">
+            <select name="sort" defaultValue={current.sort ?? "newest"}>
+              {selectedColors.length > 0 && (
+                <option value="color_match">Best color match</option>
+              )}
+              <option value="newest">Newest</option>
+              <option value="price_asc">Price: low to high</option>
+              <option value="price_desc">Price: high to low</option>
+              <option value="title_asc">Title A–Z</option>
+            </select>
+          </Field>
         </div>
-      </details>
 
-      <div className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
-        <Field label="Category">
-          <select name="category" defaultValue={current.category ?? ""}>
-            <option value="">All categories</option>
-            {facets.categories.map((c) => (
-              <option key={c.slug} value={c.name}>
-                {c.name} ({c.artwork_count})
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Subcategory">
-          <select name="subcategory" defaultValue={current.subcategory ?? ""}>
-            <option value="">All subcategories</option>
-            {facets.subcategories.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Artist">
-          <select name="artist" defaultValue={current.artist ?? ""}>
-            <option value="">All artists</option>
-            {facets.artists.map((a) => (
-              <option key={a.artist_id} value={a.artist_id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Min price">
-          <input
-            type="number"
-            name="minPrice"
-            min={facets.priceBounds?.min ?? 0}
-            placeholder={facets.priceBounds ? String(Math.floor(facets.priceBounds.min)) : "0"}
-            defaultValue={current.minPrice ?? ""}
-          />
-        </Field>
-
-        <Field label="Max price">
-          <input
-            type="number"
-            name="maxPrice"
-            min={0}
-            placeholder={facets.priceBounds ? String(Math.ceil(facets.priceBounds.max)) : ""}
-            defaultValue={current.maxPrice ?? ""}
-          />
-        </Field>
-
-        <Field label="Year">
-          <select name="year" defaultValue={current.year ?? ""}>
-            <option value="">Any year</option>
-            {facets.years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Availability">
-          <select name="availability" defaultValue={current.availability ?? ""}>
-            <option value="">All</option>
-            <option value="in_stock">Available</option>
-            <option value="sold">Sold</option>
-          </select>
-        </Field>
-
-        <Field label="Collection">
-          <select name="collection" defaultValue={current.collection ?? ""}>
-            <option value="">All collections</option>
-            {facets.collections.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Sort by">
-          <select name="sort" defaultValue={current.sort ?? "newest"}>
-            {selectedColors.length > 0 && (
-              <option value="color_match">Best color match</option>
-            )}
-            <option value="newest">Newest</option>
-            <option value="price_asc">Price: low to high</option>
-            <option value="price_desc">Price: high to low</option>
-            <option value="title_asc">Title A–Z</option>
-          </select>
-        </Field>
-      </div>
-
-      <div className="mt-8 flex items-end gap-4 border-t border-line pt-6">
-        <button
-          type="submit"
-          className="bg-ink px-6 py-3 text-sm uppercase tracking-widest2 text-canvas transition-opacity hover:opacity-90"
-        >
-          Apply filters
-        </button>
-        <Link href="/artworks" className="eyebrow link-underline">
-          Clear all
-        </Link>
+        <div className="mt-8 flex items-end gap-6 border-t border-line pt-6">
+          <button type="submit" className="btn-accent">
+            Apply filters
+          </button>
+          <Link href="/artworks" className="nav-link !text-[13px] normal-case tracking-normal self-center">
+            Clear all
+          </Link>
+        </div>
       </div>
     </form>
   );
@@ -226,7 +265,7 @@ function ColorOption({
         name="color"
         value={family}
         defaultChecked={checked}
-        className="peer h-11 w-11 cursor-pointer appearance-none rounded-full border border-line ring-offset-2 ring-offset-canvas transition-shadow checked:ring-2 checked:ring-ink"
+        className="peer h-11 w-11 cursor-pointer appearance-none rounded-full border border-line shadow-soft ring-offset-2 ring-offset-canvas transition-shadow checked:ring-2 checked:ring-accent"
         style={{ backgroundColor: normalized ?? "#d8d2c8" }}
       />
       <label

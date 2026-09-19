@@ -13,13 +13,13 @@ import FramedArtwork from "@/components/FramedArtwork";
 import PriceTag from "@/components/PriceTag";
 import PurchaseEnquiry from "@/components/PurchaseEnquiry";
 import ReadMore from "@/components/ReadMore";
+import RichText, { isLongRichText } from "@/components/RichText";
 import SectionHeading from "@/components/SectionHeading";
 import { fallbackFamilyHex } from "@/lib/colorFamilies";
 import {
   formatDate,
   isInStock,
   looksLikeHtml,
-  sanitizeRichText,
   stripHtml,
   truncate,
 } from "@/lib/utils";
@@ -155,7 +155,7 @@ export default async function ArtworkDetailPage({ params }: Props) {
         {/* Details */}
         <div>
           {artwork.part_of_collection === 1 && artwork.collection_name && (
-            <p className="eyebrow mb-3">{artwork.collection_name}</p>
+            <p className="eyebrow mb-3 text-accent">{artwork.collection_name}</p>
           )}
           <h1 className="font-display text-4xl leading-tight sm:text-5xl">
             {artwork.title}
@@ -164,7 +164,10 @@ export default async function ArtworkDetailPage({ params }: Props) {
             <p className="mt-3 text-lg text-muted">
               by{" "}
               {artwork.artist_slug ? (
-                <Link href={`/artists/${artwork.artist_slug}`} className="link-underline text-ink">
+                <Link
+                  href={`/artists/${artwork.artist_slug}`}
+                  className="link-underline text-ink transition-colors hover:text-accent"
+                >
                   {artwork.artist_name}
                 </Link>
               ) : (
@@ -177,7 +180,7 @@ export default async function ArtworkDetailPage({ params }: Props) {
 
           {artwork.short_description && (
             <div className="mt-6">
-              {isLongText(artwork.short_description) ? (
+              {isLongRichText(artwork.short_description) ? (
                 <ReadMore id={`${artwork.artwork_id}-short-description`} size="sm">
                   <RichText text={artwork.short_description} className="text-lg" />
                 </ReadMore>
@@ -190,7 +193,7 @@ export default async function ArtworkDetailPage({ params }: Props) {
           <PurchaseEnquiry artworkTitle={artwork.title} artworkId={artwork.artwork_id} />
 
           {/* Key facts */}
-          <dl className="mt-10 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-line py-8">
+          <dl className="mt-10 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-line bg-white/60 px-6 py-8 sm:px-8">
             <Fact label="Category" value={artwork.category} />
             <Fact label="Subcategory" value={artwork.subcategory} />
             <Fact label="Year" value={artwork.year ? String(artwork.year) : null} />
@@ -293,31 +296,6 @@ function Fact({ label, value }: { label: string; value: string | null | undefine
   );
 }
 
-/** Some long-form fields come through as real HTML from the import
- *  pipeline, others as plain text — render each the right way instead of
- *  showing literal tags or losing paragraph breaks. */
-function RichText({ text, className = "" }: { text: string; className?: string }) {
-  if (looksLikeHtml(text)) {
-    return (
-      <div
-        className={`richtext ${className}`}
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: sanitizeRichText(text) }}
-      />
-    );
-  }
-  return <p className={`whitespace-pre-line leading-relaxed text-muted ${className}`}>{text}</p>;
-}
-
-/** Text past this length (plain characters, tags stripped) gets clamped
- *  behind a "Read more" toggle instead of running the full length. */
-const READ_MORE_THRESHOLD = 420;
-
-function isLongText(text: string): boolean {
-  const plain = looksLikeHtml(text) ? stripHtml(text) : text;
-  return plain.trim().length > READ_MORE_THRESHOLD;
-}
-
 function Narrative({
   id,
   title,
@@ -332,7 +310,7 @@ function Narrative({
     <div>
       <h2 className="font-display text-2xl">{title}</h2>
       <div className="mt-4">
-        {isLongText(text) ? (
+        {isLongRichText(text) ? (
           <ReadMore id={id}>
             <RichText text={text} />
           </ReadMore>
