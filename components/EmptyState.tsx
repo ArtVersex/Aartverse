@@ -6,7 +6,7 @@ export default function EmptyState({
   message?: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 border border-dashed border-line px-6 py-24 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 border border-dashed border-line bg-white/40 px-6 py-24 text-center">
       <p className="font-display text-2xl">{title}</p>
       {message && <p className="max-w-md text-muted">{message}</p>}
     </div>

@@ -49,7 +49,7 @@ export default async function WeekBestCollectionPage({ params }: Props) {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/75 to-ink/30" />
         <div className="container-gallery relative z-10 max-w-3xl py-14 sm:py-20">
-          {collection.label && <p className="eyebrow text-canvas/70">{collection.label}</p>}
+          {collection.label && <p className="eyebrow text-accent">{collection.label}</p>}
           <h1 className="mt-4 font-display text-4xl leading-tight sm:text-6xl">
             {collection.headline ?? collection.collection_name}
           </h1>

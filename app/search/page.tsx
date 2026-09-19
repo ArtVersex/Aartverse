@@ -26,15 +26,30 @@ export default async function SearchPage({ searchParams }: Props) {
   return (
     <div className="container-gallery py-16">
       <div className="mb-14 border-b border-line pb-8">
-        <p className="eyebrow">Find something</p>
-        <h1 className="font-display text-4xl sm:text-5xl">Search</h1>
-        <form method="get" action="/search" className="mt-8 max-w-xl">
+        <p className="eyebrow text-accent">Find something</p>
+        <h1 className="mt-2 font-display text-4xl sm:text-5xl">Search</h1>
+        <form method="get" action="/search" className="relative mt-8 max-w-xl">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+            className="pointer-events-none absolute bottom-3.5 left-0 text-muted"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
           <input
             type="search"
             name="q"
             defaultValue={term}
             placeholder="Search artworks, artists, categories…"
-            className="border-b-2 border-ink py-3 text-lg"
+            className="border-b-2 border-ink py-3 pl-8 text-lg focus:border-accent"
             autoFocus
           />
         </form>

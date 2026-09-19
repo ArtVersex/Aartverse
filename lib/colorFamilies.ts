@@ -19,10 +19,13 @@ export const FAMILY_COLOR_FALLBACK: Record<string, string> = {
   beige: "#E3D5B8",
   brown: "#7B5233",
   red: "#B23A34",
+  orange: "#C9702E",
+  yellow: "#D8B84A",
   pink: "#E3A8B3",
   purple: "#7C6296",
   blue: "#4C74A0",
   teal: "#3E8C82",
+  cyan: "#3E8C82",
   green: "#5F8C55",
   other: "#B5AFA3",
 };

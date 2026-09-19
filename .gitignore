@@ -32,3 +32,18 @@ next-env.d.ts
 /printmaking.png
 /drawing.png
 /logo.png
+
+# credential files (defensive — these should never live inside the repo,
+# but ignore them by name in case they are ever copied in by mistake)
+hostinger.txt
+client_secret*.json
+*.apps.googleusercontent.com.json
+
+# user-uploaded artwork images (runtime data, not source)
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# leftover scratch/diagnostic files from earlier debugging sessions -- not
+# part of the app, kept around locally but never meant to be committed
+/_incoming_refresh_batch.tar.gz
+/_to_delete/

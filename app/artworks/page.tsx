@@ -123,8 +123,8 @@ export default async function ArtworksPage({
   return (
     <div className="container-gallery py-16">
       <div className="mb-10 border-b border-line pb-8">
-        <p className="eyebrow">Catalogue</p>
-        <h1 className="font-display text-4xl sm:text-5xl">
+        <p className="eyebrow text-accent">Catalogue</p>
+        <h1 className="mt-2 font-display text-4xl sm:text-5xl">
           {activeColorLabel ? `${activeColorLabel} artworks` : "Artworks"}
         </h1>
         <p className="mt-3 text-muted">

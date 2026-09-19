@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     // default (10) to tolerate the light compression noise webp/jpeg
     // photos of a "flat" background usually have.
     const trimmed = await sharp(inputBuffer).trim({ threshold: 20 }).toBuffer();
-    return new NextResponse(trimmed, {
+    return new NextResponse(new Uint8Array(trimmed), {
       headers: {
         "Content-Type": contentType,
         "Cache-Control": "public, max-age=31536000, immutable",
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     // If trimming fails for any reason (an unsupported format, an image
     // with no uniform border to find, etc.) serve the original,
     // untouched image rather than breaking the page.
-    return new NextResponse(inputBuffer, {
+    return new NextResponse(new Uint8Array(inputBuffer), {
       headers: {
         "Content-Type": contentType,
         "Cache-Control": "public, max-age=31536000, immutable",

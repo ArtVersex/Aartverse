@@ -7,7 +7,6 @@ import {
   ART_SUBMISSION_FORM_URL,
   GENERAL_WHATSAPP_MESSAGE,
   HOME_VISIT_FEE_INR,
-  HOME_VISIT_MAX_ARTWORKS_PER_ARTIST,
   WHATSAPP_DISPLAY_NUMBER,
   buildWhatsAppLink,
 } from "@/lib/constants";
@@ -25,7 +24,7 @@ export default function AboutPage() {
   return (
     <div className="container-gallery py-16">
       <div className="mb-16 max-w-2xl border-b border-line pb-12">
-        <p className="eyebrow">About Aartverse</p>
+        <p className="eyebrow text-accent">About Aartverse</p>
         <h1 className="mt-3 font-display text-4xl sm:text-5xl">
           Art that speaks to the soul
         </h1>
@@ -101,37 +100,27 @@ export default function AboutPage() {
             you for a home visit ahead of purchase.
           </p>
           <p>
-            A flat visit charge applies, and it&apos;s kept deliberately small,
-            enough to filter out casual or hoax requests, not to make money
-            on the visit itself. It&apos;s fully adjusted against the final
-            purchase price if you go ahead with buying.
+            The visit charge is prepaid to confirm the appointment, and
+            it&apos;s kept deliberately small, enough to filter out casual or
+            hoax requests, not to make money on the visit itself. It&apos;s
+            fully adjusted against the final purchase price if you go ahead
+            with buying.
           </p>
         </div>
 
-        <dl className="mt-8 grid gap-6 border border-line p-6 sm:grid-cols-2">
-          <div>
-            <dt className="eyebrow text-[11px] text-muted">One artist, one visit</dt>
-            <dd className="mt-2 text-2xl font-display">
-              {formatPrice(HOME_VISIT_FEE_INR)}
-            </dd>
-            <dd className="mt-1 text-sm text-muted">
-              Flat fee, covers up to {HOME_VISIT_MAX_ARTWORKS_PER_ARTIST}{" "}
-              artworks from that artist. Even if you&apos;d like to see just one,
-              the charge is the same flat amount.
-            </dd>
-          </div>
-          <div>
-            <dt className="eyebrow text-[11px] text-muted">Multiple artists, one visit</dt>
-            <dd className="mt-2 text-2xl font-display">
-              {formatPrice(HOME_VISIT_FEE_INR)} per artist
-            </dd>
-            <dd className="mt-1 text-sm text-muted">
-              Want to compare work from two or three different artists in
-              one sitting? The same {formatPrice(HOME_VISIT_FEE_INR)} /{" "}
-              {HOME_VISIT_MAX_ARTWORKS_PER_ARTIST}-artwork allowance applies
-              per artist, not per visit.
-            </dd>
-          </div>
+        <dl className="mt-8 border border-line bg-white p-6 shadow-soft sm:p-8">
+          <dt className="eyebrow text-[11px] text-accent">Per artwork</dt>
+          <dd className="mt-2 text-2xl font-display">
+            {formatPrice(HOME_VISIT_FEE_INR)}{" "}
+            <span className="text-base font-sans text-muted">per artwork</span>
+          </dd>
+          <dd className="mt-1 text-sm text-muted">
+            Charged per piece you&apos;d like to see in person, whether it&apos;s
+            from one artist or several -- so a visit to see three pieces is{" "}
+            {formatPrice(HOME_VISIT_FEE_INR * 3)} in total. Prepaid to confirm
+            the appointment, and adjusted against the purchase if you go
+            ahead with buying.
+          </dd>
         </dl>
 
         <p className="mt-6 text-sm text-muted">
@@ -158,27 +147,29 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="border border-line p-8 sm:p-12">
+      <section
+        className="relative overflow-hidden border border-line p-8 sm:p-12"
+        style={{
+          background:
+            "radial-gradient(ellipse 90% 100% at 100% 0%, rgba(154,91,63,0.08), transparent 60%)",
+        }}
+      >
         <SectionHeading eyebrow="For artists" title="Show your work here" />
         <p className="max-w-2xl text-muted">
           If you&apos;re an artist and would like your work on Aartverse, register
-          yourself and submit pieces through the forms below. Every
-          submission is reviewed before it&apos;s added to the catalogue.
+          yourself through the form below. Once you&apos;re set up with your own
+          dashboard, anything you publish goes live on Aartverse right away,
+          no waiting on a review queue.
         </p>
         <div className="mt-6 flex flex-wrap gap-4">
-          <a
-            href={ARTIST_REGISTRATION_FORM_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-ink px-6 py-3 text-sm uppercase tracking-widest2 text-canvas transition-opacity hover:opacity-90"
-          >
+          <a href={ARTIST_REGISTRATION_FORM_URL} target="_blank" rel="noopener noreferrer" className="btn-accent">
             Register as an artist
           </a>
           <a
             href={ART_SUBMISSION_FORM_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="border border-ink px-6 py-3 text-sm uppercase tracking-widest2 text-ink transition-opacity hover:opacity-70"
+            className="btn-secondary"
           >
             Submit an artwork
           </a>

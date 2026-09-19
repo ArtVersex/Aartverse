@@ -76,3 +76,224 @@
     @apply mb-3 mt-6 font-display text-ink first:mt-0;
   }
 }
+
+@layer components {
+  /* Auth / artist-portal / admin UI additions — kept in the same minimal
+     gallery aesthetic as the rest of the site (no rounded corners, no
+     drop shadows, ink/canvas/accent only). */
+  .btn-primary {
+    @apply inline-flex items-center justify-center bg-ink px-5 py-3 font-sans text-sm font-medium text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center border border-line bg-transparent px-5 py-3 font-sans text-sm font-medium text-ink transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center border border-red-800 bg-transparent px-4 py-2 font-sans text-xs font-medium text-red-800 transition-colors hover:bg-red-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .field-label {
+    @apply eyebrow mb-1 block;
+  }
+
+  .field-error {
+    @apply mt-1 font-sans text-xs text-red-700;
+  }
+
+  .status-pill {
+    @apply inline-flex items-center gap-1.5 border px-3 py-1 font-sans text-xs uppercase tracking-widest2;
+  }
+
+  .status-pill-pending {
+    @apply status-pill border-amber-700 text-amber-800;
+  }
+
+  .status-pill-active {
+    @apply status-pill border-emerald-700 text-emerald-800;
+  }
+
+  .status-pill-suspended {
+    @apply status-pill border-red-800 text-red-800;
+  }
+
+  .status-pill-approved {
+    @apply status-pill border-emerald-700 text-emerald-800;
+  }
+
+  .status-pill-rejected {
+    @apply status-pill border-red-800 text-red-800;
+  }
+
+  .status-pill-draft {
+    @apply status-pill border-line text-muted;
+  }
+
+  .callout-banner {
+    @apply border border-line bg-white p-4 font-sans text-sm leading-relaxed text-ink;
+  }
+}
+
+@layer components {
+  /* ---- Collapsible form sections (components/artist/ArtworkForm.tsx) ---- */
+  .details-section {
+    @apply border border-line bg-white;
+  }
+  .details-section + .details-section {
+    @apply mt-4;
+  }
+  .details-section > summary {
+    @apply flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-sans text-sm text-ink sm:px-5;
+  }
+  .details-section > summary::-webkit-details-marker {
+    display: none;
+  }
+  .details-section > summary::marker {
+    content: "";
+  }
+  .details-section-body {
+    @apply space-y-4 border-t border-line px-4 py-4 sm:px-5 sm:py-5;
+  }
+
+  /* ---- Rich text editor chrome (components/RichTextEditor.tsx) ---- */
+  .rte {
+    @apply border border-line bg-white;
+  }
+  .rte-body {
+    @apply max-h-[28rem] overflow-y-auto px-3 py-2.5 sm:px-4;
+  }
+  .rte-content {
+    @apply outline-none;
+  }
+  /* Tiptap's Placeholder extension marks the first empty paragraph with
+     class="is-editor-empty" and a data-placeholder attribute -- this is
+     the standard recipe to actually render it (the extension ships no CSS
+     of its own). */
+  .rte-content p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    @apply text-muted;
+  }
+}
+
+@layer components {
+  /* ---- Small bordered action buttons (row actions on the artist/admin
+     artworks lists and detail pages) -- same recipe as the already-shipped
+     ImpactfulToggle "chip" (components/admin/ImpactfulToggle.tsx), pulled
+     out into a shared class so every row action (Edit/Submit/Delete,
+     Approve/Reject) reads as one consistent control instead of a mix of
+     plain underlined text links and one-off bordered buttons. Deliberately
+     still no rounded corners/shadows -- stays inside the site's existing
+     flat gallery aesthetic, just with clearer touch targets on mobile. */
+  .chip-btn {
+    @apply eyebrow inline-flex shrink-0 items-center gap-1.5 border border-line px-3 py-1.5 text-[11px] text-muted transition-colors hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .chip-btn-danger {
+    @apply border-red-800/40 text-red-800 hover:border-red-800 hover:bg-red-800 hover:text-white;
+  }
+
+  /* Matches .status-pill-approved's existing green rather than the site's
+     accent color -- accent is already spoken for by the unrelated
+     "Impactful" flag (components/admin/ImpactfulToggle.tsx), so reusing it
+     here for "Approve" would visually conflate two different concepts. */
+  .chip-btn-success {
+    @apply border-emerald-700/50 text-emerald-800 hover:border-emerald-700 hover:bg-emerald-700 hover:text-white;
+  }
+
+  /* ---- Stacked list rows (artist "My artworks", admin "Artworks") ---- */
+  .row-card {
+    @apply -mx-3 rounded-none px-3 transition-colors hover:bg-line/10 sm:-mx-4 sm:px-4;
+  }
+
+  /* ---- Yes/No segmented toggle (components/artist/CollectionFields.tsx) --
+     same flat, bordered language as .chip-btn, but with a clear filled
+     "selected" state (like .btn-primary) since this is a real either/or
+     choice rather than a momentary action. */
+  .chip-toggle {
+    @apply eyebrow inline-flex min-w-[4.5rem] items-center justify-center border border-line px-4 py-2 text-[11px] text-muted transition-colors hover:border-ink hover:text-ink;
+  }
+
+  .chip-toggle-active {
+    @apply border-ink bg-ink text-canvas hover:bg-ink hover:text-canvas;
+  }
+}
+
+@layer components {
+  /* =========================================================================
+     Premium refresh (2026-09-14) — public-site header/footer/cards/heroes.
+     Builds on the existing ink/canvas/line/muted/accent palette rather than
+     replacing it: richer use of `accent`, soft ink-tinted elevation (same
+     rgba(20-23,14-20,8-18,x) family FramedArtwork already uses for its wall
+     shadow), and a little more motion on hover. Deliberately still no
+     rounded corners on cards/buttons -- that flat-edge language stays; the
+     "premium" comes from spacing, type, shadow and the accent color instead.
+     None of this touches the admin/artist-portal-only classes above.
+     ========================================================================= */
+
+  /* ---- Header nav links: animated underline instead of a static one, so
+     the header reads a level more considered than the rest of the site's
+     plain link-underline treatment. ---- */
+  .nav-link {
+    @apply relative inline-block py-1 font-sans text-[13px] font-medium uppercase tracking-widest2 text-ink/70 transition-colors duration-200 hover:text-ink;
+  }
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -3px;
+    height: 1px;
+    width: 0;
+    background-color: theme("colors.accent");
+    transition: width 300ms ease;
+  }
+  .nav-link:hover::after {
+    width: 100%;
+  }
+
+  /* ---- Elevation -- soft, ink-tinted shadows for surfaces that should
+     lift off the canvas a little (cards on hover, the mobile drawer, a
+     dropdown-like panel) without introducing a different shadow color
+     language than FramedArtwork already established. ---- */
+  .shadow-soft {
+    box-shadow: 0 8px 24px -8px rgba(23, 20, 18, 0.14);
+  }
+  .shadow-elevated {
+    box-shadow: 0 28px 60px -18px rgba(23, 20, 18, 0.28);
+  }
+
+  /* ---- A card surface that lifts slightly and gains a soft shadow on
+     hover -- used for the richer artist/category cards in this refresh.
+     Kept separate from .row-card (admin/artist list rows, which stay flat
+     with just a background tint) since this is a public-facing, more
+     tactile hover. ---- */
+  .card-lift {
+    @apply transition-all duration-300 ease-out;
+  }
+  .card-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 40px -16px rgba(23, 20, 18, 0.22);
+  }
+
+  /* ---- Warm accent CTA -- an alternative to .btn-primary's flat ink for
+     moments that should feel a little warmer/more inviting (hero CTAs,
+     "Featured" badge). Still flat-edged, on purpose. ---- */
+  .btn-accent {
+    @apply inline-flex items-center justify-center bg-accent px-6 py-3.5 font-sans text-sm font-medium uppercase tracking-widest2 text-canvas transition-all duration-300 hover:opacity-90 hover:shadow-[0_16px_32px_-10px_rgba(154,91,63,0.55)] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* ---- "Featured" badge — artists (this refresh) and, already, the
+     admin-only Impactful chip use the same accent color for "this one was
+     hand-picked," so a viewer never has to learn two different meanings
+     for it. ---- */
+  .badge-featured {
+    @apply eyebrow inline-flex items-center gap-1.5 border border-accent/50 bg-accent/10 px-2.5 py-1 text-[10px] text-accent;
+  }
+
+  /* ---- Mobile nav drawer (components/HeaderMobileMenu.tsx). ---- */
+  .drawer-link {
+    @apply flex items-center justify-between border-b border-line/70 py-4 font-display text-lg text-ink transition-colors hover:text-accent;
+  }
+}

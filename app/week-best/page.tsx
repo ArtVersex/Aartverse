@@ -28,7 +28,7 @@ export default async function WeekBestIndexPage() {
   return (
     <div className="container-gallery py-16">
       <div className="mb-16 max-w-2xl border-b border-line pb-10">
-        <p className="eyebrow">Editorial</p>
+        <p className="eyebrow text-accent">Editorial</p>
         <h1 className="mt-3 font-display text-4xl sm:text-5xl">Week Best Collection</h1>
         <p className="mt-4 text-lg text-muted">
           Every week, our editors highlight a small set of artworks worth a
@@ -69,9 +69,9 @@ export default async function WeekBestIndexPage() {
                 </div>
 
                 <div className={imageFirst ? "" : "sm:order-1"}>
-                  {collection.label && <p className="eyebrow">{collection.label}</p>}
-                  <h2 className="mt-3 font-display text-3xl leading-tight sm:text-4xl">
-                    <span className="link-underline decoration-1 underline-offset-4">
+                  {collection.label && <p className="eyebrow text-accent">{collection.label}</p>}
+                  <h2 className="mt-3 font-display text-3xl leading-tight transition-colors group-hover:text-accent sm:text-4xl">
+                    <span className="link-underline decoration-1 underline-offset-4 group-hover:decoration-accent/50">
                       {collection.headline ?? collection.collection_name}
                     </span>
                   </h2>
@@ -82,7 +82,7 @@ export default async function WeekBestIndexPage() {
                       {artworkCount} artwork{artworkCount === 1 ? "" : "s"}
                     </span>
                   </div>
-                  <span className="eyebrow mt-8 inline-block text-ink">
+                  <span className="eyebrow mt-8 inline-block text-ink transition-colors group-hover:text-accent">
                     View collection &rarr;
                   </span>
                 </div>

@@ -1,4 +1,19 @@
-import type { ColorAnalysis } from "@/lib/types";
+import type { ColorAnalysis, SocialLink } from "@/lib/types";
+
+/** Strips the cache-busting "?v=..." query param lib/uploads.ts#saveImage
+ *  appends to every managed image URL, returning the bare path underneath.
+ *  Profile/cover/artwork photos all use a STABLE path that's overwritten
+ *  in place on every re-upload (see saveImage's doc comment), so without
+ *  this, comparing a "before" and "after" URL to decide whether to clean
+ *  up an old file would see a difference on every single re-upload (the
+ *  version always changed) even though it's really the same file -- which
+ *  would fire a delete against the very file that was just uploaded a
+ *  moment earlier. */
+export function stripImageVersion(url: string | null | undefined): string | null | undefined {
+  if (!url) return url;
+  const i = url.indexOf("?");
+  return i === -1 ? url : url.slice(0, i);
+}
 
 /** Format a price stored in the `artworks.price` column for display.
  *  Prices in this database are in Indian Rupees. */
@@ -39,22 +54,86 @@ export function truncate(text: string | null | undefined, max = 140): string {
   return `${text.slice(0, max).trimEnd()}…`;
 }
 
-/** Split a comma-separated text column (e.g. artists.mediums,
- *  artworks.subcategory) into clean, trimmed values — defensively, since a
- *  column that's usually a string can come back as something else (an
- *  empty value, a number, or already an array/JSON value depending on how a
- *  particular row was imported). Never throws. */
+/** Splits a "list of short strings" column into clean, trimmed values.
+ *  Two real storage shapes exist across this schema and this handles both:
+ *    - artworks.subcategory is genuinely plain comma-separated text
+ *      (e.g. "Abstract, Portrait").
+ *    - artists.mediums is `longtext` with a `CHECK (json_valid(mediums))`
+ *      constraint (see AUTH_SETUP.md) — it's stored as a JSON array string
+ *      (e.g. '["Oil Painting","Watercolor"]'), not plain comma text, so a
+ *      naive comma-split would mangle it (splitting inside the JSON
+ *      syntax). A value that looks like a JSON array is parsed as one;
+ *      anything else falls back to comma-splitting. Defensive either way
+ *      (a column that's usually a string can come back as something else —
+ *      empty, a number, already an array) — never throws. */
 export function parseCommaList(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value.map((v) => String(v).trim()).filter(Boolean);
   }
   if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.map((v) => String(v).trim()).filter(Boolean);
+        }
+      } catch {
+        // Not actually valid JSON despite the leading "[" -- fall through
+        // to plain comma-splitting below rather than throwing.
+      }
+    }
     return value
       .split(",")
       .map((v) => v.trim())
       .filter(Boolean);
   }
   return [];
+}
+
+/** Encodes a list of short strings back into the JSON-array-string shape
+ *  `artists.mediums` requires (see parseCommaList above and the
+ *  `CHECK (json_valid(mediums))` constraint on that column). Returns null
+ *  for an empty list, matching how every other clearable profile field is
+ *  stored as NULL rather than an empty value. */
+export function encodeJsonList(values: string[]): string | null {
+  const cleaned = values.map((v) => v.trim()).filter(Boolean);
+  return cleaned.length > 0 ? JSON.stringify(cleaned) : null;
+}
+
+/** Safely parse the `artists.social_links` column -- a JSON array of
+ *  {label, url} objects (see SocialLink in lib/types.ts), same "plain
+ *  LONGTEXT, app-layer validation" convention as `mediums`/`phone`/
+ *  `whatsapp` (see scripts/migrate.mjs's doc comment on
+ *  extendArtistsTableProfessional for why there's no DB-level CHECK
+ *  constraint). Never throws; anything that isn't cleanly an array of
+ *  {label, url} objects comes back as []. */
+export function parseSocialLinks(raw: string | null | undefined): SocialLink[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((v): v is Record<string, unknown> => Boolean(v) && typeof v === "object")
+      .map((v) => ({
+        label: typeof v.label === "string" ? v.label.trim() : "",
+        url: typeof v.url === "string" ? v.url.trim() : "",
+      }))
+      .filter((v) => v.label !== "" && v.url !== "");
+  } catch {
+    return [];
+  }
+}
+
+/** Encodes a list of {label, url} pairs back into `artists.social_links`'s
+ *  JSON-string shape (see parseSocialLinks above). Returns null for an
+ *  empty list, matching how every other clearable profile field is stored
+ *  as NULL rather than an empty value. */
+export function encodeSocialLinks(links: SocialLink[]): string | null {
+  const cleaned = links
+    .map((l) => ({ label: l.label.trim(), url: l.url.trim() }))
+    .filter((l) => l.label !== "" && l.url !== "");
+  return cleaned.length > 0 ? JSON.stringify(cleaned) : null;
 }
 
 /** Basic slugify, used only as a fallback when a table has no slug column. */
