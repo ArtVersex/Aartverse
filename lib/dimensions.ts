@@ -56,3 +56,44 @@ export function convertDimensionValues(
 export function formatDimensionValues(values: number[]): string {
   return values.map((v) => (Number.isInteger(v) ? v.toFixed(0) : v.toFixed(1))).join(" × ");
 }
+
+// --- Width/Height entry on the artist's own submission form -----------
+//
+// Everything above is for the public-facing cm/in *display* toggle
+// (DimensionsToggle.tsx), which accepts any unit and any number of parsed
+// values. The two functions below are a separate, narrower pair: they back
+// DimensionFields.tsx's two plain Width/Height number boxes on
+// components/artist/ArtworkForm.tsx, which always collects (and stores) a
+// single inches measurement in one fixed shape, e.g. 24"x24".
+
+export interface ParsedWidthHeight {
+  width: string;
+  height: string;
+}
+
+/** Strictly parses the one shape formatDimensions below ever writes --
+ *  "<number>"?x<number>"?", optionally spaced, optionally quote-marked
+ *  (24"x24", 24 x 24, 24x24) -- back into separate width/height strings so
+ *  an existing artwork's saved dimensions re-populates the two boxes on the
+ *  edit form. Returns null for anything else -- a three-number depth, a
+ *  unit-less/open-ended legacy string like "Diameter 30cm, framed", or no
+ *  numbers at all -- so the form falls back to showing that original text
+ *  untouched (see DimensionFields.tsx's `legacyRaw`) rather than guessing at
+ *  a bad split. */
+export function parseDimensions(raw: string | null | undefined): ParsedWidthHeight | null {
+  if (!raw) return null;
+  const match = raw
+    .trim()
+    .match(/^(\d+(?:\.\d+)?)\s*"?\s*x\s*(\d+(?:\.\d+)?)\s*"?$/i);
+  if (!match) return null;
+  return { width: match[1], height: match[2] };
+}
+
+/** Composes the two Width/Height boxes back into the single stored string,
+ *  in inches (matching the boxes' own "inches" label) -- e.g. 24"x24".
+ *  Called only once both boxes hold a valid number (DimensionFields.tsx's
+ *  `bothFilled` check happens before this), so this assumes valid numeric
+ *  strings rather than re-validating them itself. */
+export function formatDimensions(width: string, height: string): string {
+  return `${width}"x${height}"`;
+}
