@@ -109,6 +109,7 @@ export default function ArtworkForm({
             name="title"
             type="text"
             required
+            placeholder="e.g. Monsoon Reflections"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className={state.fieldErrors?.title ? "border-red-700" : undefined}
@@ -132,6 +133,7 @@ export default function ArtworkForm({
               name="price"
               type="number"
               min="0"
+              placeholder="e.g. 15000"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               className={state.fieldErrors?.price ? "border-red-700" : undefined}
@@ -146,6 +148,7 @@ export default function ArtworkForm({
               id="year"
               name="year"
               type="number"
+              placeholder="e.g. 2024"
               value={year}
               onChange={(e) => setYear(e.target.value)}
               className={state.fieldErrors?.year ? "border-red-700" : undefined}
@@ -164,6 +167,7 @@ export default function ArtworkForm({
               id="place"
               name="place"
               type="text"
+              placeholder="e.g. Mumbai, India"
               value={place}
               onChange={(e) => setPlace(e.target.value)}
               className={state.fieldErrors?.place ? "border-red-700" : undefined}

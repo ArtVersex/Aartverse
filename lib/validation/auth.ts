@@ -63,6 +63,10 @@ const indianMobileField = z
   });
 
 export const artistProfileSchema = z.object({
+  // Editable separately from the account's original sign-up name -- a
+  // Google sign-in sometimes seeds an inaccurate/undesired name, and this
+  // is the artist's own way to fix it (see lib/queries/users.ts#updateUserName).
+  name: z.string().trim().min(2, "Please enter your name.").max(255, "Name is too long."),
   // Now authored as rich text (components/RichTextEditor.tsx) -- raised
   // from 4000 since HTML markup adds overhead well beyond the visible
   // text length, matching the artwork rich-text fields in
@@ -119,6 +123,7 @@ export function extractProfileFormValues(formData: FormData): Record<string, str
     return typeof value === "string" ? value : "";
   };
   return {
+    name: pick("name"),
     location: pick("location"),
     website: pick("website"),
     instagram: pick("instagram"),

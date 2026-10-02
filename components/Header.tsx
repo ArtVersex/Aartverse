@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { href: "/artists", label: "Artists" },
   { href: "/categories", label: "Categories" },
   { href: "/week-best", label: "Week Best" },
+  { href: "/custom-order", label: "Custom Order" },
   { href: "/about", label: "About" },
 ];
 

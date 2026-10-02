@@ -15,6 +15,27 @@ export function buildWhatsAppLink(message: string): string {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
+/**
+ * Build a wa.me deep link to an arbitrary person's own WhatsApp number --
+ * unlike buildWhatsAppLink() above, which always targets our fixed business
+ * number, this is for admin-facing "contact this artist directly" links
+ * (see app/admin/artists/page.tsx). `phone` is the raw 10-digit Indian
+ * mobile number as stored in artists.phone/artists.whatsapp (see
+ * INDIAN_MOBILE_REGEX in lib/validation/auth.ts) -- no "+91", no spaces.
+ */
+export function buildPersonalWhatsAppLink(phone: string, message?: string): string {
+  const digits = phone.replace(/\D/g, "");
+  const query = message ? `?text=${encodeURIComponent(message)}` : "";
+  return `https://wa.me/91${digits}${query}`;
+}
+
+/** Build a tel: link for an artist's own number, same raw-digit convention
+ *  as buildPersonalWhatsAppLink() above. */
+export function buildTelLink(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  return `tel:+91${digits}`;
+}
+
 export function buildEnquiryMessage(artworkTitle: string, artworkId: string): string {
   return `Hi Aartverse, I'm interested in "${artworkTitle}" (Artwork ID: ${artworkId}). Could you share more details?`;
 }
@@ -32,3 +53,26 @@ export const GENERAL_WHATSAPP_MESSAGE =
  *  here so every place that mentions the fee (the about page, the
  *  artwork-page CTA) stays in sync. */
 export const HOME_VISIT_FEE_INR = 1000;
+
+/** Fixed options for the Customized Artwork page's "What would you like us
+ *  to create?" dropdown (see app/custom-order/page.tsx). This is a
+ *  subject/style taxonomy for a commission request, deliberately separate
+ *  from the site's live artwork categories (lib/queries/categories.ts),
+ *  which track existing inventory rather than what a customer might want
+ *  made. Order matters -- shown in exactly this sequence, with "Other /
+ *  Something Specific" last as the catch-all. */
+export const CUSTOM_ORDER_TYPES = [
+  "Portrait",
+  "Pet Portrait",
+  "Family / Couple Portrait",
+  "Cartoon / Illustration",
+  "Painting from a Photo",
+  "Landscape / Nature",
+  "Religious / Spiritual Art",
+  "Traditional / Cultural Art",
+  "Abstract Art",
+  "Resin Art",
+  "Home / Interior Artwork",
+  "Custom Gift",
+  "Other / Something Specific",
+] as const;

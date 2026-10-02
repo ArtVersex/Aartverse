@@ -12,13 +12,13 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireAdmin();
+  const user = await requireAdmin();
 
   return (
     <div className="container-gallery py-8 sm:py-12">
       <p className="eyebrow mb-1">Admin</p>
       <h1 className="mb-6 font-display text-2xl">AartVerse Admin</h1>
-      <AdminNav />
+      <AdminNav isSuperAdmin={user.is_super_admin === 1} />
       {children}
     </div>
   );

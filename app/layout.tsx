@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import GeneralInquiryButton from "@/components/GeneralInquiryButton";
 import AuthProvider from "@/components/AuthProvider";
 
 const sans = Inter({
@@ -43,6 +44,7 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <Footer />
           <WhatsAppButton />
+          <GeneralInquiryButton />
         </AuthProvider>
       </body>
     </html>

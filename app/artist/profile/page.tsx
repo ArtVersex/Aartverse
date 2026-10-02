@@ -3,6 +3,7 @@ import { requireArtist } from "@/lib/auth/session";
 import { getArtistById } from "@/lib/queries/artists";
 import { getCareerEntriesForArtist } from "@/lib/queries/artistCareerEntries";
 import ProfileForm from "@/components/artist/ProfileForm";
+import { updateProfileAction } from "./actions";
 
 export const metadata = { title: "Artist Profile" };
 
@@ -27,7 +28,12 @@ export default async function ArtistProfilePage() {
           Create Artist Profile
         </Link>
       </div>
-      <ProfileForm artist={artist} careerEntries={careerEntries} />
+      <ProfileForm
+        artist={artist}
+        careerEntries={careerEntries}
+        name={user.name}
+        action={updateProfileAction}
+      />
     </div>
   );
 }
