@@ -38,6 +38,22 @@ export async function requireAdmin(): Promise<UserRow> {
   return user;
 }
 
+/**
+ * Gate for the one admin capability that isn't shared with every admin:
+ * granting or revoking admin access itself (app/admin/admins). Every other
+ * /admin/* page stays reachable by any admin via requireAdmin() above --
+ * only this one extra check exists, and only this file (plus the DB column
+ * it reads) decides who passes it. is_super_admin can only ever be set by
+ * scripts/set-super-admin.mjs (see that file's own comment) -- never by
+ * anything reachable over HTTP, so there is no path by which an admin can
+ * grant themselves this.
+ */
+export async function requireSuperAdmin(): Promise<UserRow> {
+  const user = await requireAdmin();
+  if (!user.is_super_admin) redirect("/admin");
+  return user;
+}
+
 export class ArtistSuspendedError extends Error {
   constructor() {
     super(

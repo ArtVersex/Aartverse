@@ -6,41 +6,47 @@ import {
   extractProfileFormValues,
   parseCareerEntriesField,
 } from "@/lib/validation/auth";
-import { requireActiveArtistForMutation, ArtistSuspendedError } from "@/lib/auth/session";
-import { updateUserName } from "@/lib/queries/users";
+import { requireAdmin } from "@/lib/auth/session";
+import { getUserById, updateUserName } from "@/lib/queries/users";
 import { updateArtistProfile } from "@/lib/queries/artistAccounts";
 import { getArtistById } from "@/lib/queries/artists";
 import { replaceCareerEntries } from "@/lib/queries/artistCareerEntries";
 import { saveArtistProfileImage, deleteManagedImage, UploadValidationError } from "@/lib/uploads";
 import { encodeSocialLinks, parseSocialLinks, stripImageVersion } from "@/lib/utils";
+import type { ProfileFormState } from "@/app/artist/profile/actions";
 
-export interface ProfileFormState {
-  success?: boolean;
-  error?: string;
-  fieldErrors?: Record<string, string>;
-  /** Raw submitted values for the form's plain text fields, echoed back on
-   *  every non-success return -- see extractProfileFormValues in
-   *  lib/validation/auth.ts. */
-  values?: Record<string, string>;
-}
-
-export async function updateProfileAction(
+/**
+ * Admin-side twin of app/artist/profile/actions.ts#updateProfileAction --
+ * identical validation, identical fields (including the artist's name --
+ * see lib/queries/users.ts#updateUserName), identical career-entries/image-
+ * upload handling, but gated on requireAdmin() instead of
+ * requireActiveArtistForMutation(), and operating on an explicit target
+ * userId rather than the logged-in session's own account.
+ *
+ * Exists because artists can and do make mistakes in their own profile
+ * (a typo, a wrong number, an outdated bio) that our team needs to be able
+ * to fix directly from /admin/artists/[userId], without routing every small
+ * correction back through the artist themselves. Reuses <ProfileForm>
+ * itself (same "action as a prop" shape as ArtworkForm -- see that
+ * component's own comment) rather than a second, easily-out-of-sync copy of
+ * the form.
+ *
+ * Bound to a specific userId via .bind(null, userId) wherever it's handed
+ * to <ProfileForm> (see app/admin/artists/[userId]/page.tsx) -- same
+ * pattern as updateArtworkAsAdminAction in app/admin/artworks/actions.ts.
+ */
+export async function updateArtistProfileAsAdminAction(
+  userId: string,
   _prevState: ProfileFormState,
   formData: FormData
 ): Promise<ProfileFormState> {
-  let user;
-  try {
-    user = await requireActiveArtistForMutation();
-  } catch (err) {
-    if (err instanceof ArtistSuspendedError) {
-      return { error: err.message, values: extractProfileFormValues(formData) };
-    }
-    throw err;
+  await requireAdmin();
+
+  const target = await getUserById(userId);
+  if (!target || target.role !== "artist" || !target.artist_id) {
+    return { error: "That artist account could not be found." };
   }
 
-  // Digits only: strips whatever the artist typed around the number
-  // (spaces, dashes, a pasted "+91") before validating against the plain
-  // 10-digit format stored in the DB.
   const digitsOnly = (value: FormDataEntryValue | null): string | null => {
     if (typeof value !== "string") return null;
     const cleaned = value.replace(/\D/g, "");
@@ -48,12 +54,8 @@ export async function updateProfileAction(
   };
 
   const phone = digitsOnly(formData.get("phone"));
-  // "WhatsApp same as phone" checkbox: when checked, whatsapp always
-  // mirrors phone (even if the artist leaves the separate field blank/
-  // hidden) -- this is the common case and keeps the form simple.
   const whatsappSameAsPhone = formData.get("whatsappSameAsPhone") === "on";
   const whatsapp = whatsappSameAsPhone ? phone : digitsOnly(formData.get("whatsapp"));
-
   const nameRaw = formData.get("name");
 
   const parsed = artistProfileSchema.safeParse({
@@ -80,11 +82,9 @@ export async function updateProfileAction(
     return { fieldErrors, values: extractProfileFormValues(formData) };
   }
 
-  const artistId = user.artist_id as string;
+  const artistId = target.artist_id;
   // Needed so a replaced profile/cover photo can delete the OLD file
-  // afterward instead of leaving it behind forever (see deleteManagedImage
-  // in lib/uploads.ts) -- read before any upload so we still have the
-  // pre-update URLs to compare against.
+  // afterward -- same reasoning as the artist's own action.
   const currentArtist = await getArtistById(artistId);
 
   const updates: Parameters<typeof updateArtistProfile>[1] = {
@@ -98,10 +98,6 @@ export async function updateProfileAction(
     bio: parsed.data.bio,
     professional_experience: parsed.data.professionalExperience,
     additional_notes: parsed.data.additionalNotes,
-    // Re-parsed and re-encoded (rather than stored as submitted) so a
-    // stray malformed entry from the hidden input is quietly dropped
-    // instead of ever reaching the database -- see
-    // lib/utils.ts#parseSocialLinks/encodeSocialLinks.
     social_links: encodeSocialLinks(parseSocialLinks(parsed.data.socialLinks)),
   };
 
@@ -116,14 +112,8 @@ export async function updateProfileAction(
           values: extractProfileFormValues(formData),
         };
       }
-      // A misconfigured/unreachable remote image host (bad FTP creds,
-      // wrong directory, network issue) must never silently swallow the
-      // whole profile save -- surface it as a visible field error instead
-      // of letting it bubble up and abort the action before
-      // updateArtistProfile() below ever runs (which would otherwise look
-      // like "nothing happened" with no error and no DB change).
       console.error(
-        `[profile] failed to save profile photo for artist ${artistId}:`,
+        `[admin-artist-profile] failed to save profile photo for artist ${artistId}:`,
         err instanceof Error ? err.message : err
       );
       return {
@@ -147,7 +137,7 @@ export async function updateProfileAction(
         };
       }
       console.error(
-        `[profile] failed to save cover photo for artist ${artistId}:`,
+        `[admin-artist-profile] failed to save cover photo for artist ${artistId}:`,
         err instanceof Error ? err.message : err
       );
       return {
@@ -159,20 +149,12 @@ export async function updateProfileAction(
     }
   }
 
-  // Separate table from the `updates` above (users.name, not artists.*) --
-  // only written when it actually changed, so this never touches
-  // updated_at/triggers on a save where the artist left their name alone.
-  if (parsed.data.name !== user.name) {
-    await updateUserName(user.id, parsed.data.name);
+  if (parsed.data.name !== target.name) {
+    await updateUserName(target.id, parsed.data.name);
   }
 
   await updateArtistProfile(artistId, updates);
 
-  // Every repeatable career-history list saves alongside the rest of this
-  // form in one submit -- see replaceCareerEntries' doc comment for why
-  // this one call covers all six kinds atomically. Parsed defensively (see
-  // parseCareerEntriesField): a malformed entry in any one list is simply
-  // dropped, never a reason to fail this whole save.
   await replaceCareerEntries(artistId, {
     exhibition: parseCareerEntriesField(formData, "exhibitions"),
     education: parseCareerEntriesField(formData, "education"),
@@ -182,8 +164,6 @@ export async function updateProfileAction(
     collection: parseCareerEntriesField(formData, "institutionalCollections"),
   });
 
-  // Only remove the OLD files once the new URLs are safely saved, and only
-  // when a new file actually replaced them.
   if (
     updates.profile_image_url !== undefined &&
     stripImageVersion(updates.profile_image_url) !== stripImageVersion(currentArtist?.profile_image_url)
@@ -197,13 +177,14 @@ export async function updateProfileAction(
     await deleteManagedImage(currentArtist?.cover_image_url);
   }
 
+  revalidatePath("/admin/artists");
+  revalidatePath(`/admin/artists/${userId}`);
+  // Same public/artist-facing cache busting as the artist's own save, so an
+  // admin's correction shows up immediately everywhere too.
   revalidatePath("/artist/dashboard");
   revalidatePath("/artist/profile");
-  // The public artist page is ISR-cached for 5 minutes (see
-  // `revalidate = 300` in app/artists/[slug]/page.tsx) and this action was
-  // never busting that specific cache -- so a save could take up to 5
-  // minutes to show up on the artist's live public page even though the
-  // database write itself happened immediately.
+  revalidatePath("/artists");
+  revalidatePath("/");
   if (currentArtist?.slug) {
     revalidatePath(`/artists/${currentArtist.slug}`);
   }

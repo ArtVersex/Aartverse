@@ -2,7 +2,7 @@
 
 import { useActionState, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { updateProfileAction, type ProfileFormState } from "@/app/artist/profile/actions";
+import type { ProfileFormState } from "@/app/artist/profile/actions";
 import type { ArtistCareerEntryKind, ArtistCareerEntryRow, ArtistRow } from "@/lib/types";
 import { parseCommaList, parseSocialLinks } from "@/lib/utils";
 import MediumsPicker from "@/components/artist/MediumsPicker";
@@ -26,14 +26,30 @@ function SubmitButton() {
 export default function ProfileForm({
   artist,
   careerEntries = [],
+  name: initialName,
+  action,
 }: {
   artist: ArtistRow | null;
   /** This artist's full career history across all six kinds -- see
    *  lib/queries/artistCareerEntries.ts. Split by kind below rather than
    *  requiring the caller to pre-group it. */
   careerEntries?: ArtistCareerEntryRow[];
+  /** The account's current display name (users.name) -- NOT part of
+   *  ArtistRow, since it lives on the users table. Editable here because a
+   *  Google sign-in sometimes seeds an inaccurate name; see
+   *  lib/queries/users.ts#updateUserName. */
+  name: string;
+  /** Which server action this form submits to -- passed in by the caller
+   *  rather than hardcoded, same "action as a prop" shape as ArtworkForm
+   *  (components/artist/ArtworkForm.tsx). app/artist/profile/page.tsx passes
+   *  updateProfileAction (the artist editing their own profile);
+   *  app/admin/artists/[userId]/page.tsx passes
+   *  updateArtistProfileAsAdminAction bound to a target userId (an admin
+   *  correcting a mistake on someone else's profile) -- see that action's
+   *  own doc comment in app/admin/artists/[userId]/actions.ts. */
+  action: (prevState: ProfileFormState, formData: FormData) => Promise<ProfileFormState>;
 }) {
-  const [state, formAction] = useActionState(updateProfileAction, initialState);
+  const [state, formAction] = useActionState(action, initialState);
   // Defaults to checked whenever there's no separate WhatsApp number saved
   // yet, or it already matches the phone number -- so the common case
   // (one number for both) never makes the artist fill in two fields.
@@ -50,6 +66,7 @@ export default function ProfileForm({
   // statement/bio/professional experience (RichTextEditor) and mediums/
   // social links/every career-entries list (their own controlled
   // components) are already immune, so they were never affected.
+  const [name, setName] = useState(initialName);
   const [location, setLocation] = useState(artist?.location ?? "");
   const [website, setWebsite] = useState(artist?.website ?? "");
   const [instagram, setInstagram] = useState(artist?.instagram ?? "");
@@ -66,6 +83,7 @@ export default function ProfileForm({
   const lastSyncedValues = useRef(state.values);
   if (state.values && state.values !== lastSyncedValues.current) {
     lastSyncedValues.current = state.values;
+    setName(state.values.name ?? "");
     setLocation(state.values.location ?? "");
     setWebsite(state.values.website ?? "");
     setInstagram(state.values.instagram ?? "");
@@ -100,6 +118,27 @@ export default function ProfileForm({
       </FormSection>
 
       <FormSection title="About you">
+        <div>
+          <label className="field-label" htmlFor="name">
+            Your name
+          </label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="As you'd like it shown publicly"
+            className={state.fieldErrors?.name ? "border-red-700" : undefined}
+          />
+          {state.fieldErrors?.name && <p className="field-error">{state.fieldErrors.name}</p>}
+          <p className="mt-1 font-sans text-xs text-muted">
+            Shown on your public artist page and throughout your dashboard. If you signed in with
+            Google and the name looks off, fix it here -- it won&apos;t change back on its own.
+          </p>
+        </div>
+
         <div>
           <label className="field-label">Artist statement</label>
           <RichTextEditor

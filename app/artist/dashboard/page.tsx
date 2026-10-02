@@ -5,6 +5,7 @@ import { getArtistById } from "@/lib/queries/artists";
 import { parseCommaList } from "@/lib/utils";
 import SafeImage from "@/components/SafeImage";
 import StatusPill from "@/components/StatusPill";
+import ArtworkRowActions from "@/components/artist/ArtworkRowActions";
 
 export const metadata = { title: "Artist Dashboard" };
 
@@ -12,6 +13,7 @@ export default async function ArtistDashboardPage() {
   const user = await requireArtist();
   const artworks = user.artist_id ? await listArtworksForArtist(user.artist_id) : [];
   const artistProfile = user.artist_id ? await getArtistById(user.artist_id) : null;
+  const suspended = user.status === "suspended";
 
   // Every submission publishes immediately now (see
   // app/artist/artworks/actions.ts), so a review-pipeline breakdown would
@@ -180,41 +182,60 @@ export default async function ArtistDashboardPage() {
             You haven&apos;t added any artworks yet.
           </p>
         ) : (
+          // Same row-card format as the full "My artworks" list
+          // (app/artist/artworks/page.tsx) -- category/subcategory line,
+          // full StatusPill, and the full ArtworkRowActions menu -- rather
+          // than the stripped-down image+title+status+Edit row this used to
+          // show. Still capped to 5 with "View all" linking to the complete
+          // list above; only the row format changed.
           <ul className="divide-y divide-line border-y border-line">
             {artworks.slice(0, 5).map((artwork) => (
-              <li
-                key={artwork.artwork_id}
-                className="flex items-center gap-3 py-3 transition-colors hover:bg-canvas/50 sm:gap-4"
-              >
-                <div className="relative h-16 w-16 shrink-0 overflow-hidden border border-line bg-line/40">
-                  {artwork.feature_image_url ? (
-                    <SafeImage
-                      src={artwork.feature_image_url}
-                      alt=""
-                      fill
-                      sizes="64px"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <IconImage className="h-5 w-5 text-muted/60" />
+              <li key={artwork.artwork_id} className="row-card">
+                <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:gap-4">
+                  <Link
+                    href={`/artist/artworks/${artwork.artwork_id}/edit`}
+                    className="relative h-16 w-16 shrink-0 overflow-hidden border border-line bg-line/40 transition-opacity hover:opacity-80"
+                  >
+                    {artwork.feature_image_url ? (
+                      <SafeImage
+                        src={artwork.feature_image_url}
+                        alt=""
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <IconImage className="h-5 w-5 text-muted/60" />
+                      </div>
+                    )}
+                  </Link>
+
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/artist/artworks/${artwork.artwork_id}/edit`}
+                      className="link-underline block truncate text-sm"
+                    >
+                      {artwork.title}
+                    </Link>
+                    {(artwork.category || artwork.subcategory) && (
+                      <p className="mt-0.5 truncate font-sans text-xs text-muted">
+                        {[artwork.category, artwork.subcategory].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
+                    <div className="mt-1.5">
+                      <StatusPill status={artwork.status ?? "draft"} />
                     </div>
-                  )}
+                  </div>
+
+                  <div className="shrink-0 sm:pl-2">
+                    <ArtworkRowActions
+                      artworkId={artwork.artwork_id}
+                      status={artwork.status ?? "draft"}
+                      suspended={suspended}
+                    />
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm">{artwork.title}</p>
-                  {artwork.status && (
-                    <span className={`status-pill-${artwork.status} mt-1 !px-2 !py-0.5 !text-[9px]`}>
-                      {artwork.status}
-                    </span>
-                  )}
-                </div>
-                <Link
-                  href={`/artist/artworks/${artwork.artwork_id}/edit`}
-                  className="eyebrow link-underline shrink-0"
-                >
-                  Edit
-                </Link>
               </li>
             ))}
           </ul>

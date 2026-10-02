@@ -69,6 +69,9 @@ export default function ArtistProfileBuilder({
       else next.add(id);
       return next;
     });
+  const allArtworksSelected = artworks.length > 0 && selectedArtworkIds.size === artworks.length;
+  const toggleAllArtworks = () =>
+    setSelectedArtworkIds(allArtworksSelected ? new Set() : new Set(artworks.map((a) => a.artwork_id)));
 
   const selectedArtworkList: PdfArtworkSource[] = artworks
     .filter((a) => selectedArtworkIds.has(a.artwork_id))
@@ -340,9 +343,20 @@ export default function ArtistProfileBuilder({
 
       {step === 3 && (
         <div className="space-y-4">
-          <p className="font-sans text-sm text-muted">
-            Choose which artworks to include. Every artwork is selected by default.
-          </p>
+          <div className="flex items-center justify-between gap-4">
+            <p className="font-sans text-sm text-muted">
+              Choose which artworks to include. Every artwork is selected by default.
+            </p>
+            {artworks.length > 0 && (
+              <button
+                type="button"
+                onClick={toggleAllArtworks}
+                className="eyebrow link-underline shrink-0"
+              >
+                {allArtworksSelected ? "Deselect all" : "Select all"}
+              </button>
+            )}
+          </div>
           {artworks.length === 0 ? (
             <p className="border-y border-line py-6 font-sans text-sm text-muted">
               You have not added any artworks yet.

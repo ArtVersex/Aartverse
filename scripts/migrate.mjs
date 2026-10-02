@@ -33,6 +33,8 @@ async function main() {
     await extendArtworksTable(conn);
     await extendRankingColumns(conn);
     await widenIdColumns(conn);
+    await addSuperAdminColumn(conn);
+    await createInquiriesTable(conn);
     console.log("\nMigration complete. No existing data was modified or removed.");
   } finally {
     await conn.end();
@@ -70,7 +72,7 @@ async function run(conn, label, sql) {
 }
 
 async function createAuthTables(conn) {
-  console.log("Step 1/7: auth tables (users, accounts, tokens)");
+  console.log("Step 1/9: auth tables (users, accounts, tokens)");
 
   if (!(await tableExists(conn, "users"))) {
     await conn.query(`
@@ -196,7 +198,7 @@ async function createAuthTables(conn) {
  * conflict. Idempotent: skipped once the collations already match.
  */
 async function alignAuthTableCollation(conn) {
-  console.log("\nStep 2/7: align `users.artist_id` collation with legacy `artists.artist_id`");
+  console.log("\nStep 2/9: align `users.artist_id` collation with legacy `artists.artist_id`");
 
   if (!(await tableExists(conn, "artists")) || !(await tableExists(conn, "users"))) {
     console.log("  --  `artists` or `users` table missing, skipping");
@@ -238,7 +240,7 @@ async function alignAuthTableCollation(conn) {
 }
 
 async function extendArtistsTable(conn) {
-  console.log("\nStep 3/7: extend `artists` table (additive only)");
+  console.log("\nStep 3/9: extend `artists` table (additive only)");
 
   if (!(await tableExists(conn, "artists"))) {
     console.log("  --  table `artists` does not exist yet, skipping (nothing to extend)");
@@ -298,7 +300,7 @@ async function extendArtistsTable(conn) {
  * in the app layer, not enforced by the column itself.
  */
 async function extendArtistsTableProfessional(conn) {
-  console.log("\nStep 4/7: extend `artists` table with optional professional-profile fields");
+  console.log("\nStep 4/9: extend `artists` table with optional professional-profile fields");
 
   if (!(await tableExists(conn, "artists"))) {
     console.log("  --  table `artists` does not exist yet, skipping (nothing to extend)");
@@ -356,7 +358,7 @@ async function extendArtistsTableProfessional(conn) {
  * alignAuthTableCollation() exists to work around.
  */
 async function createArtistCareerEntriesTable(conn) {
-  console.log("\nStep 5/7: create `artist_career_entries` table");
+  console.log("\nStep 5/9: create `artist_career_entries` table");
 
   if (await tableExists(conn, "artist_career_entries")) {
     console.log("  --  table `artist_career_entries` already exists, skipping create");
@@ -391,7 +393,7 @@ async function createArtistCareerEntriesTable(conn) {
 }
 
 async function extendArtworksTable(conn) {
-  console.log("\nStep 6/7: extend `artworks` table (additive only)");
+  console.log("\nStep 6/9: extend `artworks` table (additive only)");
 
   if (!(await tableExists(conn, "artworks"))) {
     console.log("  --  table `artworks` does not exist, skipping (nothing to extend)");
@@ -464,7 +466,7 @@ async function extendArtworksTable(conn) {
  * of the home page rail by recency.
  */
 async function extendRankingColumns(conn) {
-  console.log("\nStep 7/7: add featured_priority (artists) / feature_rank (artworks) ranking columns");
+  console.log("\nStep 7/9: add featured_priority (artists) / feature_rank (artworks) ranking columns");
 
   if (await tableExists(conn, "artists")) {
     if (!(await columnExists(conn, "artists", "featured_priority"))) {
@@ -510,6 +512,81 @@ async function widenIdColumns(conn) {
       );
     }
   }
+}
+
+/**
+ * Lets exactly one account act as the "super admin" -- the only admin who
+ * can grant or revoke admin access to others (see
+ * app/admin/admins/page.tsx, requireSuperAdmin() in lib/auth/session.ts).
+ * Deliberately NOT settable through any HTTP route, same philosophy as
+ * `role` itself (see scripts/create-admin.mjs's comment) -- the only way to
+ * set this flag is the CLI-only scripts/set-super-admin.mjs, so no admin,
+ * however they were promoted, can ever grant themselves or anyone else
+ * super-admin status from the website. Defaults to 0 for every existing and
+ * future row; nothing is auto-flagged by this migration.
+ */
+async function addSuperAdminColumn(conn) {
+  console.log("\nStep 8/9: add `users.is_super_admin` column");
+
+  if (!(await tableExists(conn, "users"))) {
+    console.log("  --  table `users` does not exist yet, skipping");
+    return;
+  }
+
+  if (!(await columnExists(conn, "users", "is_super_admin"))) {
+    await conn.query(
+      `ALTER TABLE users ADD COLUMN is_super_admin TINYINT(1) NOT NULL DEFAULT 0 AFTER role`
+    );
+    console.log("  OK  added column `users.is_super_admin`");
+  } else {
+    console.log("  --  `users.is_super_admin` already exists, skipping");
+  }
+}
+
+/**
+ * One shared table for every customer inquiry -- a per-artwork "I'm
+ * interested in this piece" enquiry, a general question submitted from
+ * anywhere on the site, and a customized-product request. A `type` column
+ * distinguishes the three instead of three separate tables, since they
+ * share the same shape (who's asking, how to reach them, what they said)
+ * and the same admin-facing workflow (see lib/queries/inquiries.ts). FK to
+ * `artworks` is nullable and ON DELETE SET NULL -- deleting an artwork
+ * later should never delete the inquiry record that mentioned it, just
+ * detach it.
+ */
+async function createInquiriesTable(conn) {
+  console.log("\nStep 9/9: create `inquiries` table");
+
+  if (await tableExists(conn, "inquiries")) {
+    console.log("  --  table `inquiries` already exists, skipping create");
+    return;
+  }
+
+  await conn.query(`
+    CREATE TABLE inquiries (
+      id CHAR(36) NOT NULL PRIMARY KEY,
+      type ENUM('artwork','general','custom') NOT NULL,
+      artwork_id VARCHAR(64) NULL,
+      category_id VARCHAR(64) NULL,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      phone VARCHAR(20) NULL,
+      message TEXT NOT NULL,
+      status ENUM('new','contacted','closed') NOT NULL DEFAULT 'new',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      KEY idx_inquiries_type (type),
+      KEY idx_inquiries_artwork (artwork_id),
+      KEY idx_inquiries_status (status, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  console.log("  OK  created table `inquiries`");
+
+  await run(
+    conn,
+    "FK inquiries.artwork_id -> artworks.artwork_id",
+    `ALTER TABLE inquiries ADD CONSTRAINT fk_inquiries_artwork FOREIGN KEY (artwork_id) REFERENCES artworks(artwork_id) ON DELETE SET NULL`
+  );
 }
 
 main().catch((err) => {

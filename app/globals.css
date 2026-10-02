@@ -16,7 +16,9 @@
   select,
   input[type="number"],
   input[type="text"],
-  input[type="search"] {
+  input[type="search"],
+  input[type="email"],
+  input[type="tel"] {
     @apply w-full border-b border-line bg-transparent py-2 font-sans text-sm text-ink;
   }
 

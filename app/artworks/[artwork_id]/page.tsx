@@ -12,6 +12,8 @@ import ColorScaleBar from "@/components/ColorScaleBar";
 import FramedArtwork from "@/components/FramedArtwork";
 import PriceTag from "@/components/PriceTag";
 import PurchaseEnquiry from "@/components/PurchaseEnquiry";
+import InquiryForm from "@/components/InquiryForm";
+import DimensionsToggle from "@/components/DimensionsToggle";
 import ReadMore from "@/components/ReadMore";
 import RichText, { isLongRichText } from "@/components/RichText";
 import SectionHeading from "@/components/SectionHeading";
@@ -192,12 +194,32 @@ export default async function ArtworkDetailPage({ params }: Props) {
 
           <PurchaseEnquiry artworkTitle={artwork.title} artworkId={artwork.artwork_id} />
 
+          {/* DB-backed alternative to the WhatsApp-only CTA above -- for a
+              visitor who'd rather leave a question than open WhatsApp.
+              Saved to the `inquiries` table and emailed to every admin (see
+              app/inquiries/actions.ts); doesn't replace the WhatsApp option,
+              just sits alongside it. */}
+          <div className="mt-6 border border-line bg-white p-6">
+            <p className="eyebrow mb-3">Or leave us a question about this piece</p>
+            <InquiryForm type="artwork" artworkId={artwork.artwork_id} />
+          </div>
+
           {/* Key facts */}
           <dl className="mt-10 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-line bg-white/60 px-6 py-8 sm:px-8">
             <Fact label="Category" value={artwork.category} />
             <Fact label="Subcategory" value={artwork.subcategory} />
             <Fact label="Year" value={artwork.year ? String(artwork.year) : null} />
-            <Fact label="Dimensions" value={artwork.dimensions} />
+            {artwork.dimensions && (
+              <div>
+                <dt className="eyebrow text-[11px] text-muted">Dimensions</dt>
+                {/* cm/in toggle -- see lib/dimensions.ts for how the free-text
+                    value is parsed and converted. Falls back to the plain
+                    text as-is when it can't be parsed. */}
+                <dd className="mt-1">
+                  <DimensionsToggle raw={artwork.dimensions} />
+                </dd>
+              </div>
+            )}
             <Fact label="Place" value={artwork.place} />
             <Fact label="Certificate no." value={artwork.certificate_number} />
           </dl>

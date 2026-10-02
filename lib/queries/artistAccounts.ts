@@ -120,7 +120,8 @@ export async function setArtistFeatured(
 }
 
 /** Sets (or clears, with null) an artist's manual priority among featured
- *  artists -- see getFeaturedArtists (lib/queries/artists.ts). Independent
+ *  artists -- 1 = best/shown first, same convention as artworks'
+ *  feature_rank. See getFeaturedArtists (lib/queries/artists.ts). Independent
  *  of the featured flag itself: a priority value on a non-featured artist
  *  has no visible effect until/unless they're also marked featured, since
  *  getFeaturedArtists always filters on featured = 1 first. Wired to

@@ -68,6 +68,15 @@ export async function linkArtistProfile(
   ]);
 }
 
+/** Lets an artist edit their own display name -- distinct from
+ *  setUserRole/setUserStatus below, which are admin-only transitions. A
+ *  Google sign-in sometimes seeds an inaccurate name (a nickname, a old
+ *  name tied to the Google account, a transliteration) that the artist
+ *  should be free to correct themselves at any time. */
+export async function updateUserName(userId: string, name: string): Promise<void> {
+  await query(`UPDATE users SET name = ? WHERE id = ?`, [name, userId]);
+}
+
 export async function setUserPassword(
   userId: string,
   passwordHash: string
@@ -146,16 +155,119 @@ export interface AdminArtistListItem extends UserRow {
    *  FeaturedPriorityInput.tsx) need real starting values. */
   artist_featured: number | null;
   artist_featured_priority: number | null;
+  /** artists.phone/whatsapp for this user's linked profile, if any -- lets
+   *  the admin "manage artists" screen render a direct call/WhatsApp link
+   *  per row (see app/admin/artists/page.tsx) so staff can reach an artist
+   *  without hunting through their profile first. */
+  artist_phone: string | null;
+  artist_whatsapp: string | null;
+  /** Raw core-profile fields -- used only to flag an incomplete profile for
+   *  the "needs a reminder" shortcut on the admin broadcast screen (see
+   *  isArtistProfileIncomplete below). All NULL for a user who registered
+   *  but never created an artist profile row at all (artist_id is NULL),
+   *  which correctly counts as "incomplete" too. */
+  artist_profile_image_url: string | null;
+  artist_statement: string | null;
+  artist_location: string | null;
+  artist_mediums: string | null;
+  /** Total rows in `artworks` for this artist, any status -- unlike
+   *  getArtworkCountForArtist in lib/queries/artworks.ts (approved-only, for
+   *  a public artist page), this counts pending/rejected submissions too,
+   *  since "has this artist submitted anything at all" is the question the
+   *  broadcast screen's reminder shortcut needs answered, not "has anything
+   *  been approved yet". */
+  artwork_count: number;
 }
 
-/** For the admin "manage artists" screen. */
+/** For the admin "manage artists" screen, and (via the extra fields above)
+ *  the "needs a reminder" shortcut on the broadcast screen. */
 export async function listArtistUsers(): Promise<AdminArtistListItem[]> {
   return query<AdminArtistListItem>(
     `SELECT u.*, a.name AS artist_name, a.slug AS artist_slug,
-            a.featured AS artist_featured, a.featured_priority AS artist_featured_priority
+            a.featured AS artist_featured, a.featured_priority AS artist_featured_priority,
+            a.phone AS artist_phone, a.whatsapp AS artist_whatsapp,
+            a.profile_image_url AS artist_profile_image_url,
+            a.artist_statement AS artist_statement,
+            a.location AS artist_location,
+            a.mediums AS artist_mediums,
+            (SELECT COUNT(*) FROM artworks w WHERE w.artist_id = u.artist_id) AS artwork_count
      FROM users u
      LEFT JOIN artists a ON a.artist_id = u.artist_id
      WHERE u.role = 'artist'
      ORDER BY u.created_at DESC`
   );
+}
+
+/** Treats a profile as "incomplete" when it's missing any of the core,
+ *  publicly-visible basics -- photo, artist statement, location, mediums --
+ *  that ProfileForm.tsx groups above its "Professional profile" section;
+ *  that section's own copy calls everything below it (bio, career history,
+ *  social links, etc.) "entirely optional and never required to submit
+ *  artwork", so none of those factor in here. Used only by the admin
+ *  broadcast screen's "needs a reminder" shortcut (see
+ *  app/admin/broadcast/page.tsx) -- not a gate anywhere else, so an artist
+ *  is never blocked from doing anything over this. */
+export function isArtistProfileIncomplete(artist: {
+  artist_profile_image_url: string | null;
+  artist_statement: string | null;
+  artist_location: string | null;
+  artist_mediums: string | null;
+}): boolean {
+  const hasRichText = (html: string | null) =>
+    !!html && html.replace(/<[^>]*>/g, "").trim() !== "";
+  return (
+    !artist.artist_profile_image_url ||
+    !hasRichText(artist.artist_statement) ||
+    !artist.artist_location?.trim() ||
+    !artist.artist_mediums?.trim()
+  );
+}
+
+/** Every current admin's email -- used to notify the whole admin team on
+ *  site events (today: a new customer inquiry, see
+ *  lib/email/templates.ts#sendNewInquiryAdminEmail). Deliberately every
+ *  admin, not just the super admin, since responding to customers is a
+ *  normal admin capability, not a super-admin-only one. */
+export async function listAdminEmails(): Promise<string[]> {
+  const rows = await query<{ email: string }>(`SELECT email FROM users WHERE role = 'admin'`);
+  return rows.map((row) => row.email);
+}
+
+/** For the super-admin-only "Manage Admins" screen
+ *  (app/admin/admins/page.tsx) -- the super admin sorts first, then the
+ *  rest by how long they've been an admin. */
+export async function listAdminUsers(): Promise<UserRow[]> {
+  return query<UserRow>(
+    `SELECT * FROM users WHERE role = 'admin' ORDER BY is_super_admin DESC, created_at ASC`
+  );
+}
+
+/**
+ * Grants admin access to an existing account -- the UI-reachable
+ * counterpart to scripts/create-admin.mjs's CLI promotion, reachable only
+ * from app/admin/admins/actions.ts#promoteToAdminAction, which gates it
+ * behind requireSuperAdmin(). Also activates the account (same as the CLI
+ * script) so a pending/suspended user becomes a fully working admin right
+ * away. Never touches is_super_admin -- that flag has no HTTP-reachable
+ * setter at all (see scripts/set-super-admin.mjs).
+ */
+export async function promoteUserToAdmin(userId: string): Promise<void> {
+  await query(`UPDATE users SET role = 'admin', status = 'active' WHERE id = ?`, [userId]);
+}
+
+/**
+ * Reverses promoteUserToAdmin() above -- demotes an admin back to the
+ * 'artist' role, which cuts off every /admin/* route on their very next
+ * request (requireAdmin() re-checks role fresh every time, see
+ * lib/auth/session.ts). Status resets to 'pending' rather than guessing
+ * whether they should land back as an active artist, since an admin
+ * promoted straight from a brand-new signup may never have had an
+ * approved artist profile at all; an admin who DID have one before being
+ * promoted can simply be re-approved from /admin/artists afterward. Never
+ * called on a super admin -- enforced in the calling action
+ * (app/admin/admins/actions.ts#revokeAdminAction), not here, same
+ * defense-in-depth pattern as every other admin mutation in this codebase.
+ */
+export async function revokeAdminAccess(userId: string): Promise<void> {
+  await query(`UPDATE users SET role = 'artist', status = 'pending' WHERE id = ?`, [userId]);
 }

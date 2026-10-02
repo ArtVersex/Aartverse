@@ -11,7 +11,8 @@ export const metadata: Metadata = {
 };
 
 export default async function ArtistsPage() {
-  // Already ordered featured DESC, name ASC (see getAllArtists in
+  // Already ordered by featured_priority (1 = best) first, then by newest
+  // profile for everyone without a manual priority (see getAllArtists in
   // lib/queries/artists.ts) -- ArtistCard marks which ones are featured
   // with a small badge, so that ordering has a visible reason behind it
   // instead of just being an unexplained sort.

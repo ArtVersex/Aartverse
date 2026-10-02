@@ -79,8 +79,9 @@ export interface ArtistRow {
   social_links: string | null;
   additional_notes: string | null;
   featured: number | null; // tinyint 0/1
-  /** Manual priority among featured artists -- higher shows first, NULL =
-   *  no manual priority (falls back to alphabetical order). See
+  /** Manual priority among featured artists -- 1 = best/shown first (same
+   *  convention as ArtworkRow.feature_rank below), NULL = no manual
+   *  priority (falls back to alphabetical order). See
    *  lib/queries/artists.ts#getFeaturedArtists. */
   featured_priority: number | null;
   active: number | null; // tinyint 0/1
@@ -225,6 +226,11 @@ export interface UserRow {
   email: string;
   password_hash: string | null;
   role: UserRole;
+  /** Set only by scripts/set-super-admin.mjs, never by any HTTP route --
+   *  gates app/admin/admins/page.tsx (granting/revoking admin access) and
+   *  requireSuperAdmin() in lib/auth/session.ts. An ordinary admin (role =
+   *  'admin', is_super_admin = 0) has every other admin capability. */
+  is_super_admin: number; // tinyint 0/1
   status: UserStatus;
   email_verified_at: string | null;
   image: string | null;
@@ -245,3 +251,30 @@ export interface AccountRow {
 }
 
 export type ArtworkStatus = "draft" | "pending" | "approved" | "rejected";
+
+/* -------------------------------------------------------------------------
+ * Customer inquiries (artwork enquiries, general questions, customized-
+ * product requests). See lib/queries/inquiries.ts.
+ * ---------------------------------------------------------------------- */
+
+export type InquiryType = "artwork" | "general" | "custom";
+export type InquiryStatus = "new" | "contacted" | "closed";
+
+/** Row shape of the `inquiries` table. One shared shape for all three
+ *  inquiry types -- `artwork_id` is only set for type 'artwork',
+ *  `category_id` only for type 'custom' (and is a free-text category name,
+ *  not a real foreign key -- see lib/queries/categories.ts's own comment on
+ *  why the `categories` table has no guaranteed id column). */
+export interface InquiryRow {
+  id: string;
+  type: InquiryType;
+  artwork_id: string | null;
+  category_id: string | null;
+  name: string;
+  email: string;
+  phone: string | null;
+  message: string;
+  status: InquiryStatus;
+  created_at: string;
+  updated_at: string;
+}
