@@ -54,6 +54,8 @@ export default function ImageFileInput({
   // showing the photo the artist picked, silently lying about what's still
   // attached. Runs after every render (no dependency array) so it notices
   // as soon as that reset happens, whichever render it lands on.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately no
+  // dependency array; see the comment above.
   useEffect(() => {
     if (previewUrl && inputRef.current && inputRef.current.files?.length === 0) {
       if (objectUrlRef.current) {

@@ -229,6 +229,9 @@ export default function ArtistProfileDocument({
     <Document title={`${draft.name || "Artist"} - Artist Profile`}>
       <Page size="A4" style={styles.page} wrap>
         <View style={styles.headerRow}>
+          {/* eslint-disable-next-line jsx-a11y/alt-text -- this is react-pdf's
+              own <Image>, a PDF primitive with no `alt` prop at all, not an
+              HTML/next <img>; the rule can't tell the two apart by tag name. */}
           {photoDataUri && <Image src={photoDataUri} style={styles.photo} />}
           <View style={styles.headerText}>
             <Text style={styles.name}>{draft.name || "Untitled Artist"}</Text>
@@ -348,6 +351,8 @@ export default function ArtistProfileDocument({
             <View style={styles.artworkGrid}>
               {artworks.map((art, i) => (
                 <View key={i} style={styles.artworkCard} wrap={false}>
+                  {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's
+                      <Image>, same as above, not an HTML/next <img>. */}
                   {art.imageDataUri && <Image src={art.imageDataUri} style={styles.artworkImage} />}
                   <Text style={styles.artworkTitle}>{art.title}</Text>
                   <Text style={styles.artworkMeta}>
