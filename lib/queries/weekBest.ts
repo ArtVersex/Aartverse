@@ -132,6 +132,9 @@ export interface WeekBestCollectionInput {
   weekOf?: string | null;
   label?: string | null;
   headline?: string | null;
+  /** The longer curatorial note -- see WeekBestCollectionRow.description's
+   *  own doc comment in lib/types.ts. */
+  description?: string | null;
 }
 
 export async function createWeekBestCollection(
@@ -140,8 +143,8 @@ export async function createWeekBestCollection(
   const id = randomUUID();
   await query(
     `INSERT INTO week_best_collections
-       (week_best_collection_id, collection_name, artist_id, week_of, label, headline)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+       (week_best_collection_id, collection_name, artist_id, week_of, label, headline, description)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       input.collectionName,
@@ -149,6 +152,7 @@ export async function createWeekBestCollection(
       input.weekOf ?? null,
       input.label ?? null,
       input.headline ?? null,
+      input.description ?? null,
     ]
   );
   return id;
@@ -167,6 +171,7 @@ export async function updateWeekBestCollection(
     week_of: "weekOf" in input ? input.weekOf ?? null : undefined,
     label: "label" in input ? input.label ?? null : undefined,
     headline: "headline" in input ? input.headline ?? null : undefined,
+    description: "description" in input ? input.description ?? null : undefined,
   };
   const keys = Object.keys(columnMap).filter((k) => columnMap[k] !== undefined);
   if (keys.length === 0) return false;

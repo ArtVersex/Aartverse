@@ -152,6 +152,11 @@ export interface WeekBestCollectionRow {
   week_of: string | null;
   label: string | null;
   headline: string | null;
+  /** A longer curatorial note, shown as supporting body text under the hero
+   *  headline -- see app/week-best/[collection_id]/page.tsx. Kept separate
+   *  from `headline` (a short display title) so the public pages never have
+   *  to guess which of the two a long string actually is. */
+  description: string | null;
   created_at: string | null;
   updated_at: string | null;
 }

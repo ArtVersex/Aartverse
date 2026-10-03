@@ -35,6 +35,7 @@ async function main() {
     await widenIdColumns(conn);
     await addSuperAdminColumn(conn);
     await createInquiriesTable(conn);
+    await addWeekBestDescriptionColumn(conn);
     console.log("\nMigration complete. No existing data was modified or removed.");
   } finally {
     await conn.end();
@@ -587,6 +588,38 @@ async function createInquiriesTable(conn) {
     "FK inquiries.artwork_id -> artworks.artwork_id",
     `ALTER TABLE inquiries ADD CONSTRAINT fk_inquiries_artwork FOREIGN KEY (artwork_id) REFERENCES artworks(artwork_id) ON DELETE SET NULL`
   );
+}
+
+/**
+ * `week_best_collections.description` -- a separate, longer curatorial note
+ * shown as supporting body text under the hero headline (see
+ * app/week-best/[collection_id]/page.tsx), distinct from `headline` itself.
+ * Added because `headline` was being used for both jobs: a handful of
+ * existing collections have a full multi-sentence paragraph typed into
+ * `headline` (a single-line input with no guidance that it should stay
+ * short), which the public hero then renders at display/h1 size -- fine for
+ * an actual short headline, unreadable for a paragraph. Existing rows are
+ * untouched; an admin moves that longer text into this new field by hand
+ * (see components/admin/week-best/EditCollectionForm.tsx), there's no way to
+ * tell programmatically which existing `headline` values are "too long" and
+ * which are genuinely just a long title someone meant to keep.
+ */
+async function addWeekBestDescriptionColumn(conn) {
+  console.log("\nStep 10/10: add `week_best_collections.description`");
+
+  if (!(await tableExists(conn, "week_best_collections"))) {
+    console.log("  --  table `week_best_collections` does not exist yet, skipping");
+    return;
+  }
+
+  if (!(await columnExists(conn, "week_best_collections", "description"))) {
+    await conn.query(
+      `ALTER TABLE week_best_collections ADD COLUMN description LONGTEXT NULL AFTER headline`
+    );
+    console.log("  OK  added column `week_best_collections.description`");
+  } else {
+    console.log("  --  `week_best_collections.description` already exists, skipping");
+  }
 }
 
 main().catch((err) => {

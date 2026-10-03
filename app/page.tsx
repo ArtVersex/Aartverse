@@ -136,6 +136,11 @@ export default async function HomePage() {
                 <h2 className="mt-2 font-display text-3xl sm:text-4xl">
                   {weekBest.headline ?? weekBest.collection_name}
                 </h2>
+                {weekBest.description && (
+                  <p className="mt-3 max-w-xl line-clamp-2 text-sm leading-relaxed text-canvas/70">
+                    {weekBest.description}
+                  </p>
+                )}
               </div>
               <Link
                 href={`/week-best/${encodeURIComponent(weekBest.week_best_collection_id)}`}

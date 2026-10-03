@@ -17,9 +17,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { collection_id } = await params;
   const collection = await getWeekBestCollectionById(collection_id);
   if (!collection) return { title: "Collection not found" };
+  const title = collection.headline ?? collection.collection_name;
   return {
-    title: collection.headline ?? collection.collection_name,
-    description: truncate(collection.headline ?? collection.collection_name, 160),
+    title,
+    // Prefer the actual curatorial note for the meta description when
+    // there is one -- it's written as a real description, where the title
+    // alone (or truncated to 160 chars) makes for a poor one.
+    description: truncate(collection.description ?? title, 160),
   };
 }
 
@@ -53,6 +57,11 @@ export default async function WeekBestCollectionPage({ params }: Props) {
           <h1 className="mt-4 font-display text-4xl leading-tight sm:text-6xl">
             {collection.headline ?? collection.collection_name}
           </h1>
+          {collection.description && (
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-canvas/80 sm:text-lg">
+              {collection.description}
+            </p>
+          )}
           <div className="mt-8 flex flex-wrap gap-x-8 gap-y-2 text-sm text-canvas/70">
             {collection.week_of && <span>Week of {formatDate(collection.week_of)}</span>}
             {artist?.name && <span>Featuring {artist.name}</span>}
