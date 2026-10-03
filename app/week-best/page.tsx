@@ -75,6 +75,11 @@ export default async function WeekBestIndexPage() {
                       {collection.headline ?? collection.collection_name}
                     </span>
                   </h2>
+                  {collection.description && (
+                    <p className="mt-3 line-clamp-2 text-base leading-relaxed text-muted">
+                      {collection.description}
+                    </p>
+                  )}
                   <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
                     {collection.week_of && <span>{formatDate(collection.week_of)}</span>}
                     {artist?.name && <span>Featuring {artist.name}</span>}

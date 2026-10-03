@@ -39,12 +39,14 @@ function readCollectionForm(formData: FormData): WeekBestCollectionInput {
   const weekOf = String(formData.get("weekOf") ?? "").trim();
   const label = String(formData.get("label") ?? "").trim();
   const headline = String(formData.get("headline") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
   const artistId = String(formData.get("artistId") ?? "").trim();
   return {
     collectionName,
     weekOf: weekOf || null,
     label: label || null,
     headline: headline || null,
+    description: description || null,
     artistId: artistId || null,
   };
 }

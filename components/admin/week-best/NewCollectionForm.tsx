@@ -75,7 +75,21 @@ export default function NewCollectionForm({
         <span className="eyebrow text-[11px]">Headline</span>
         <input
           name="headline"
-          placeholder="Shown on the home page and collection page"
+          placeholder="e.g. The Language of Devotion"
+          className="border border-line px-3 py-2 text-sm focus:border-ink focus:outline-none"
+        />
+        <span className="text-xs text-muted">
+          Shown big, as the title, on the home page and collection page -- keep it short, a few
+          words. For the longer curatorial note, use Description below instead.
+        </span>
+      </label>
+
+      <label className="flex flex-col gap-1.5 text-sm sm:col-span-2">
+        <span className="eyebrow text-[11px]">Description (optional)</span>
+        <textarea
+          name="description"
+          rows={3}
+          placeholder="A sentence or two about this week's pieces -- shown under the headline, in regular body text."
           className="border border-line px-3 py-2 text-sm focus:border-ink focus:outline-none"
         />
       </label>

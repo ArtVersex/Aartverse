@@ -40,6 +40,19 @@ const MESSAGE_PLACEHOLDER: Record<InquiryFormProps["type"], string> = {
  * button, and the Customized Product page. What differs per use is just
  * which hidden fields are set and whether the category dropdown shows.
  */
+/** Every plain <input> below sits in a form with only one button further
+ *  down (Send enquiry) -- a browser submits the form the moment Enter is
+ *  pressed in any single-line text input, by default, even with nothing
+ *  focused on that button. Without this, pressing Enter after typing just
+ *  the name (easy to do out of habit, tabbing between fields) submits the
+ *  form right then, before the message box below has anything in it --
+ *  which looks exactly like "I filled everything in and still got an
+ *  error". <textarea> already ignores Enter (it inserts a line break
+ *  instead), so only the single-line inputs need this. */
+function preventEnterSubmit(e: React.KeyboardEvent<HTMLInputElement>) {
+  if (e.key === "Enter") e.preventDefault();
+}
+
 export default function InquiryForm({ type, artworkId, categories, onSuccess }: InquiryFormProps) {
   const [state, formAction, isPending] = useActionState(submitInquiryAction, initialState);
 
@@ -81,21 +94,41 @@ export default function InquiryForm({ type, artworkId, categories, onSuccess }: 
         <label htmlFor="inquiry-name" className="field-label">
           Your name
         </label>
-        <input id="inquiry-name" name="name" type="text" required placeholder="e.g. Priya Sharma" />
+        <input
+          id="inquiry-name"
+          name="name"
+          type="text"
+          required
+          placeholder="e.g. Priya Sharma"
+          onKeyDown={preventEnterSubmit}
+        />
       </div>
 
       <div>
         <label htmlFor="inquiry-email" className="field-label">
           Email
         </label>
-        <input id="inquiry-email" name="email" type="email" required placeholder="you@example.com" />
+        <input
+          id="inquiry-email"
+          name="email"
+          type="email"
+          required
+          placeholder="you@example.com"
+          onKeyDown={preventEnterSubmit}
+        />
       </div>
 
       <div>
         <label htmlFor="inquiry-phone" className="field-label">
           Phone (optional)
         </label>
-        <input id="inquiry-phone" name="phone" type="tel" placeholder="e.g. 98765 43210" />
+        <input
+          id="inquiry-phone"
+          name="phone"
+          type="tel"
+          placeholder="e.g. 98765 43210"
+          onKeyDown={preventEnterSubmit}
+        />
       </div>
 
       <div>
