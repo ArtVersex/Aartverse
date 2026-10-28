@@ -106,43 +106,69 @@ export async function createArtworkAction(
   // read all over the public site (SEO title, structured data, cards,
   // search) and previously left NULL forever for portal-created artworks
   // since nothing wrote it. One extra lookup, only at creation time.
-  const artist = await getArtistById(user.artist_id as string);
+  //
+  // Both DB calls below are wrapped: an error here (e.g. the shared-
+  // hosting connection pool briefly maxed out) must never surface as
+  // Next.js's generic, unhelpful "client-side exception" screen -- show a
+  // clear, retry-able message instead, and clean up the image we already
+  // uploaded above so it doesn't linger as an orphan with no artwork row
+  // pointing at it.
+  try {
+    const artist = await getArtistById(user.artist_id as string);
 
-  await createArtwork(
-    user.artist_id as string,
-    {
-      title: parsed.data.title,
-      artistName: artist?.name ?? null,
-      category: parsed.data.category,
-      subcategory: parsed.data.subcategory,
-      price: parsed.data.price,
-      year: parsed.data.year,
-      dimensions: parsed.data.dimensions,
-      place: parsed.data.place,
-      partOfCollection: parsed.data.partOfCollection,
-      collectionName: parsed.data.collectionName,
-      shortDescription: parsed.data.shortDescription,
-      description: parsed.data.description,
-      techniqueHighlight: parsed.data.techniqueHighlight,
-      historicalContext: parsed.data.historicalContext,
-      symbolism: parsed.data.symbolism,
-      compositionAnalysis: parsed.data.compositionAnalysis,
-      culturalSignificance: parsed.data.culturalSignificance,
-      featureImageUrl: imageUrl,
-    },
-    // Straight to "approved" -- the artist's own submission goes live on
-    // Aartverse.com immediately, no admin review step in between. Admin's
-    // remaining artwork-level tools are curatorial (the "impactful" flag,
-    // see components/admin/ImpactfulToggle.tsx) and, for the rare
-    // submission that turns out not to be genuine, outright removal (see
-    // deleteArtworkAsAdminAction) -- not a gate every new piece must first
-    // pass through. "draft" still exists as a status (any artwork created
-    // before this change, or a future save-without-submitting path, can
-    // still use it), it's just never the outcome of this action anymore.
-    "approved",
-    colorAnalysis,
-    artworkId
-  );
+    await createArtwork(
+      user.artist_id as string,
+      {
+        title: parsed.data.title,
+        artistName: artist?.name ?? null,
+        category: parsed.data.category,
+        subcategory: parsed.data.subcategory,
+        price: parsed.data.price,
+        year: parsed.data.year,
+        dimensions: parsed.data.dimensions,
+        place: parsed.data.place,
+        partOfCollection: parsed.data.partOfCollection,
+        collectionName: parsed.data.collectionName,
+        shortDescription: parsed.data.shortDescription,
+        description: parsed.data.description,
+        techniqueHighlight: parsed.data.techniqueHighlight,
+        historicalContext: parsed.data.historicalContext,
+        symbolism: parsed.data.symbolism,
+        compositionAnalysis: parsed.data.compositionAnalysis,
+        culturalSignificance: parsed.data.culturalSignificance,
+        featureImageUrl: imageUrl,
+      },
+      // Straight to "approved" -- the artist's own submission goes live on
+      // Aartverse.com immediately, no admin review step in between. Admin's
+      // remaining artwork-level tools are curatorial (the "impactful" flag,
+      // see components/admin/ImpactfulToggle.tsx) and, for the rare
+      // submission that turns out not to be genuine, outright removal (see
+      // deleteArtworkAsAdminAction) -- not a gate every new piece must first
+      // pass through. "draft" still exists as a status (any artwork created
+      // before this change, or a future save-without-submitting path, can
+      // still use it), it's just never the outcome of this action anymore.
+      "approved",
+      colorAnalysis,
+      artworkId
+    );
+  } catch (err) {
+    console.error(
+      `[artworks] failed to save artwork ${artworkId} after image upload:`,
+      err instanceof Error ? err.message : err
+    );
+    try {
+      await deleteManagedImage(imageUrl);
+    } catch (cleanupErr) {
+      console.error(
+        `[artworks] failed to clean up orphaned image for artwork ${artworkId}:`,
+        cleanupErr instanceof Error ? cleanupErr.message : cleanupErr
+      );
+    }
+    return {
+      error: "We couldn't save your artwork just now. Please wait a moment and try again.",
+      values: extractArtworkFormValues(formData),
+    };
+  }
 
   revalidatePath("/artist/artworks");
   revalidatePath("/admin/artworks");
@@ -206,26 +232,52 @@ export async function updateArtworkAction(
     }
   }
 
-  await updateOwnedArtwork(artworkId, user.artist_id as string, {
-    title: parsed.data.title,
-    category: parsed.data.category,
-    subcategory: parsed.data.subcategory,
-    price: parsed.data.price,
-    year: parsed.data.year,
-    dimensions: parsed.data.dimensions,
-    place: parsed.data.place,
-    partOfCollection: parsed.data.partOfCollection,
-    collectionName: parsed.data.collectionName,
-    shortDescription: parsed.data.shortDescription,
-    description: parsed.data.description,
-    techniqueHighlight: parsed.data.techniqueHighlight,
-    historicalContext: parsed.data.historicalContext,
-    symbolism: parsed.data.symbolism,
-    compositionAnalysis: parsed.data.compositionAnalysis,
-    culturalSignificance: parsed.data.culturalSignificance,
-    featureImageUrl: imageUrl,
-    colorAnalysis,
-  });
+  // Wrapped for the same reason as createArtworkAction's DB call: a
+  // transient DB error must surface as a clear, retry-able message, not
+  // Next.js's generic "client-side exception" screen. If a new image was
+  // already uploaded above, clean it up too so it doesn't linger as an
+  // orphan the (unchanged) row never ends up pointing at.
+  try {
+    await updateOwnedArtwork(artworkId, user.artist_id as string, {
+      title: parsed.data.title,
+      category: parsed.data.category,
+      subcategory: parsed.data.subcategory,
+      price: parsed.data.price,
+      year: parsed.data.year,
+      dimensions: parsed.data.dimensions,
+      place: parsed.data.place,
+      partOfCollection: parsed.data.partOfCollection,
+      collectionName: parsed.data.collectionName,
+      shortDescription: parsed.data.shortDescription,
+      description: parsed.data.description,
+      techniqueHighlight: parsed.data.techniqueHighlight,
+      historicalContext: parsed.data.historicalContext,
+      symbolism: parsed.data.symbolism,
+      compositionAnalysis: parsed.data.compositionAnalysis,
+      culturalSignificance: parsed.data.culturalSignificance,
+      featureImageUrl: imageUrl,
+      colorAnalysis,
+    });
+  } catch (err) {
+    console.error(
+      `[artworks] failed to update artwork ${artworkId}:`,
+      err instanceof Error ? err.message : err
+    );
+    if (imageUrl !== undefined) {
+      try {
+        await deleteManagedImage(imageUrl);
+      } catch (cleanupErr) {
+        console.error(
+          `[artworks] failed to clean up orphaned replacement image for artwork ${artworkId}:`,
+          cleanupErr instanceof Error ? cleanupErr.message : cleanupErr
+        );
+      }
+    }
+    return {
+      error: "We couldn't save your changes just now. Please wait a moment and try again.",
+      values: extractArtworkFormValues(formData),
+    };
+  }
 
   // Clean up the replaced image only after the DB row is safely pointing
   // at the new one — if the update above had thrown, we'd keep both files
