@@ -31,9 +31,22 @@ function createPool(): Pool {
     user: readRequiredEnv("DB_USER"),
     password: readRequiredEnv("DB_PASSWORD"),
     waitForConnections: true,
-    connectionLimit: 10,
-    maxIdle: 10,
+    // Kept deliberately low: this pool is created fresh per Vercel
+    // serverless function instance (see the comment on `pool` below), so
+    // under concurrent traffic the real total against the database is
+    // (this number) x (number of concurrently-warm instances). A budget
+    // shared-hosting MySQL plan's max_connections cap is easy to exceed
+    // with a higher per-instance limit, which surfaced as intermittent
+    // "client-side exception" / "site won't open" errors for unrelated
+    // reads and writes alike once connections were exhausted.
+    connectionLimit: 3,
+    maxIdle: 3,
     idleTimeout: 60_000,
+    // Fail fast on a genuinely unreachable/overloaded DB host rather than
+    // hanging for mysql2's much longer default -- callers (Server Actions,
+    // page loads) have their own layer above this to show a friendly error
+    // once this throws instead of hanging indefinitely.
+    connectTimeout: 10_000,
     queueLimit: 0,
     // Return DECIMAL columns (e.g. price) as JS numbers instead of strings.
     decimalNumbers: true,
